@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#184a3c">
+  <link rel="manifest" href="/app.webmanifest"><link rel="icon" href="/icon-192.png" type="image/png"><link rel="apple-touch-icon" href="/icon-192.png"><title>珠宝店主工作台 · 实物档案</title><link rel="stylesheet" href="/style.css"><script type="module" src="/app.js"></script>
+</head>
+<body>
+<header><div class="shell"><p class="eyebrow">店主工作台 · 本机测试店</p><h1>我的实物工作台</h1><p class="subtitle">从相册归组；打开原卡，改资料、问本件、看本件短片。</p></div></header>
+<main class="shell">
+  <p id="notice" role="status" aria-live="polite" hidden></p>
+  <section aria-labelledby="import-title" id="import-panel">
+    <div class="row"><div><p class="kicker">01 / 选原图</p><h2 id="import-title">从相册混选</h2></div><button id="album-mode" class="quiet" type="button" hidden>回到相册混选</button></div>
+    <p id="mode-hint">可同时选择不同实物的照片，无需先分组。手机原相册不会被更改。</p>
+    <form id="import-form">
+      <label for="photos">选择原照片（可多选）</label>
+      <input id="photos" type="file" accept="image/jpeg,image/png,image/webp" multiple required>
+      <p id="selected" class="muted" aria-live="polite">尚未选择照片</p><p class="fine" id="file-limits">支持 JPEG、PNG、WebP 原图。</p>
+      <button id="submit-import" class="primary" type="submit" disabled>开始整理</button>
+    </form>
+  </section>
+  <section aria-labelledby="task-title"><div class="row"><div><p class="kicker">02 / 查看进度</p><h2 id="task-title">整理任务</h2></div><button id="refresh" type="button" class="quiet">刷新数据</button></div>
+    <label for="history">打开已保存的任务</label><div class="row select-row"><select id="history"></select><button id="open-task" type="button">查看任务</button></div>
+    <div id="task-detail" class="detail" aria-live="polite">选择任务后可查看每张照片的处理结果。</div>
+  </section>
+  <section id="review-panel" hidden aria-labelledby="review-title"><p class="kicker">归组须确认</p><h2 id="review-title">这些照片是同一件吗？</h2>
+    <p>逐组选中属于同一实物的照片，选择建新卡或补到原卡，点「加入本次确认」。可以同时整理不同实物；未选的照片不应被误归组。</p>
+        <p id="review-hint" class="fine" hidden></p>
+    <div class="compare-review"><div><h3>待认的照片</h3><div id="pending"></div></div>
+      <div><label for="target-card">本组归属</label><select id="target-card"></select><div id="target-preview"></div><small>选旧卡时可对照它的原图。列表是本店可选原卡，不代表系统已经认定；看不准可保留待认。</small></div></div>
+    <button type="button" id="stage-group">加入本次确认</button><div id="group-list"></div><button id="submit-review" type="button" class="primary">提交已选归属</button>
+  </section>
+  <section aria-labelledby="cards-title"><p class="kicker">03 / 实物档案</p><h2 id="cards-title">本店商品卡</h2><p id="card-count" class="muted"></p><div id="cards"></div><div id="card-detail"></div></section>
+    <section aria-labelledby="desk-title"><div class="row"><div><p class="kicker">04 / 本店任务</p><h2 id="desk-title">待办与视频任务</h2></div><button id="refresh-desk" type="button" class="quiet">刷新待办</button></div>
+    <div id="desk-tasks" aria-live="polite">正在读取本店任务…</div>
+  </section>
+  <section id="installation" aria-labelledby="install-title"><p class="kicker">桌面入口</p><h2 id="install-title">把工作台放到手机桌面</h2>
+    <p id="install-help" class="fine" role="status">若浏览器菜单提供「安装应用」或「添加到主屏幕」，可从那里添加。仍需连接测试店服务，离线不显示店铺资料。</p>
+    <button type="button" id="install-desk" hidden>安装工作台</button>
+  </section>
+  <footer>店主内部工作台 · 外店未提交</footer>
+</main>
+</body></html>

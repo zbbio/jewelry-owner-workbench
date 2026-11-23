@@ -1,0 +1,16 @@
+{
+  "id": "/",
+  "name": "珠宝店主工作台",
+  "short_name": "店主工作台",
+  "lang": "zh-CN",
+  "description": "店主内部：从相册选图，在同一张原卡上核对商品、问本件、找回批准的作品。",
+  "scope": "/",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f1f4ec",
+  "theme_color": "#184a3c",
+  "icons": [
+    {"src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+    {"src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"}
+  ]
+}
