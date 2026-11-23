@@ -9,42 +9,63 @@
 | 销售 | 从当前商品卡取报价、文案和引用，库存不明建待办 | 本地问答和操作规则；不调用收费模型、不代发顾客消息 |
 | 内容 | 选本件获准素材、生成 MP4、预览并确认指定版本、按卡取回 | 普通取片优先已有批准版；重新选材不等于强制重剪，不向外店发布 |
 
-## 本地运行
+## 下载与本地运行
 
-已在 Windows、Node.js 23.11.1（内置 node:sqlite）和 Python 3.13 上验证。需要 Python 能执行 Pillow、NumPy、OpenCV。视频还需 PATH 中的 ffmpeg 和 ffprobe（支持 libx264 和 drawtext），以及系统中可用的中文字体。仓库不附字体或编解码器。Node 端没有需安装的第三方 npm 包。
+通过本公开仓的 **Code → Download ZIP** 下载并解压，或克隆本仓。**进入你实际解压后包含 [启动隔离手机试用.ps1](启动隔离手机试用.ps1) 的目录**，同层还有 [server.mjs](server.mjs)、[package.json](package.json) 和 [requirements.txt](requirements.txt)。目录名可能带分支名或提交哈希。**下方路径只是示例，执行前请换成你实际的路径。** Windows PowerShell 中路径含中文或空格时，请保留引号：
 
-在仓库根目录执行：
+~~~powershell
+Set-Location -LiteralPath '.\公开 试用\实际解压目录'
+~~~
 
-```sh
-python -m pip install -r requirements.txt
-npm start
-```
+以下命令中的文件路径都相对于这个目录。
 
-然后在这台电脑打开 **http://127.0.0.1:4179/**。可先用自己的两组多角度照片导入相册，确认是否同一件，再建卡并编辑尺寸、价格。涉及样片制作时，只勾选有权使用的素材。初次启动是空库，不附示例商家或真实商品照片。
+需要 Node.js 23 或更新版本（内置 `node:sqlite`）；参考环境为 Windows、Node.js 23.11.1 和 Python 3.13。相册功能需要 Pillow、NumPy、OpenCV；制作视频还需 PATH 中的 FFmpeg、ffprobe（支持 libx264 和 drawtext）和可用的中文字体。仓库不附字体或编解码器。Node 端无须安装第三方 npm 包。
 
-默认数据目录为当前用户主目录下的 `.jewelry-owner-workbench-public/demo`。设置 `WORKBENCH_DATA` 可改用一个新的空目录；不要把它指向已有商家数据库。服务只监听本机回环地址。**不要把默认演示身份通过隧道或反向代理暴露到公网**。GitHub 公开的是源代码，运行产生的照片、数据库和视频保留在本地。
+~~~powershell
+python -m pip install -r '.\requirements.txt'
+node '.\server.mjs'
+~~~
 
-### 安卓 USB 试用（可选）
+也可执行 `npm.cmd start`（实际调用 `node server.mjs`）。在同一电脑打开默认地址 **http://127.0.0.1:4179/**。新数据目录首次启动时为空；可导入自己有权使用的试验照片，再补充尺寸和价格。默认演示数据在当前用户主目录下的 `.jewelry-owner-workbench-public/demo`。如设置 `WORKBENCH_DATA`，请用新的空目录，勿指向商家已有数据库。
 
-在 Windows 上安装 Android Platform Tools，并确保 `adb` 在 PATH 中。解锁手机并授权正在测试的电脑，然后用 PowerShell 在仓库根目录执行：
+服务只绑定本机回环地址。不要用公网隧道、反向代理或端口转发对外暴露这个演示服务。公开仓只提供源代码和测试，不附私有资料、店铺数据库、素材、凭据或既有设备配对。
 
-```powershell
-& '.\启动隔离手机试用.ps1' -UsbAndroid
-```
+### 隔离试用与可选安卓 USB 浏览器
 
-按终端提示在手机浏览器打开该本地地址，输入本次运行显示的临时试用口令。不要把口令发给他人。试用结束在终端按 Ctrl+C。手机是显示和操作端，无须访问私人相册即可操作测试店已导入的商品。
+下列命令也在仓库根目录执行。Windows PowerShell 5.1 使用 `powershell.exe`，PowerShell 7 使用 `pwsh.exe`；按已安装的解释器选一行。不带 `-UsbAndroid` 只在电脑本机启动隔离试用，不查找设备。
 
-### 合成回归
+~~~powershell
+powershell.exe -NoProfile -File '.\启动隔离手机试用.ps1'
+pwsh.exe -NoProfile -File '.\启动隔离手机试用.ps1'
+~~~
 
-```sh
-npm test
-```
+安卓 USB 试用另需安装 Android SDK Platform Tools（`adb` 在 PATH 中），并由测试者在**自己有权测试的设备**上启用 USB 调试、解锁并确认本电脑的调试授权。选对应的命令：
 
-测试使用程序生成的图片、临时 SQLite 和本地生成的短视频。测试在系统临时目录创建隔离数据，不需要真实店铺库。手机真机播放和新店照片识别效果需要单独测，不能用单元测试通过数代替。
+~~~powershell
+powershell.exe -NoProfile -File '.\启动隔离手机试用.ps1' -UsbAndroid
+pwsh.exe -NoProfile -File '.\启动隔离手机试用.ps1' -UsbAndroid
+~~~
 
-### 已知限制
+[启动脚本](启动隔离手机试用.ps1)保存为带 BOM 的 UTF-8，编辑时请保留 BOM。上述命令不改全局执行策略或系统编码；若所在环境禁止运行脚本，请遵守其策略。
 
-当前实体安卓已实测同卡改资料、按卡问价及刷新前的媒体播放；原标签确实刷新过，但尚未取得刷新后重播的完整真机证据。本项目不附调试设备标识、商家素材、调试日志、真实测试库、模型密钥或私有仓库历史。没有支付、结算或真实外店发布链路。
+默认端口为 4187，可用 `-Port` 指定。`-UsbAndroid` 默认只接受唯一一台已连接并授权的设备；多台时用 `-Serial` 明确选定测试设备。若事先检测到端口占用则提示换端口。
+
+启动后按终端提示，在本机或启用 USB 的测试手机浏览器中打开试用页（默认 **http://localhost:4187/pilot**），输入本次启动的临时口令，不要截图、抄录或转发口令。隔离数据在 `%LOCALAPPDATA%\JewelryOwnerWorkbenchPublic-Trials` 下；`-Shop` 选择独立子目录，同一名称再次启动会复用其本地试用数据。正常结束按 Ctrl+C；清理只针对本次启动建立的映射。
+
+**本公开试用版是本地移动网页，不会安装 APK。**
+
+### 回归与实测边界
+
+~~~powershell
+npm.cmd test
+node --test '.\tests\launcher-powershell.test.mjs'
+~~~
+
+第一行跑仓库完整测试入口（等同 `node --test`）；合成业务回归用程序生成的图片、临时 SQLite 和短视频，不用真实店铺资料。视频测试需满足上述依赖。第二行只跑 [Windows 启动脚本回归](tests/launcher-powershell.test.mjs)；非 Windows 或缺少对应解释器时会跳过相应项，跳过不算通过。
+
+本轮用真实 Windows PowerShell 5.1 和 PowerShell 7 解析脚本，两者均无语法错误。从含中文和空格的隔离目录用 `-NoProfile -File` 执行时，替身回归检查了不带 USB 时的启动参数、`-UsbAndroid` 分支的定向映射与回收调用、以及已有映射时拒绝启动。另用无授权设备的 ADB 替身确认，`-UsbAndroid` 会在设备检查处按预期退出。
+
+这些结果只证明脚本可解析、参数和分支按预期传递。**本轮未建立真实 USB 映射、未在真机浏览器试用，也未验证真机问价或播放。** 目前不包括支付、结算、顾客消息自动发送或真实外店发布。
 
 ## 许可
 

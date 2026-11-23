@@ -1,4 +1,4 @@
-param([switch]$UsbAndroid,[string]$Serial,[ValidateRange(1024,65535)][int]$Port=4187,[string]$Shop='n3-device-trial')
+﻿param([switch]$UsbAndroid,[string]$Serial,[ValidateRange(1024,65535)][int]$Port=4187,[string]$Shop='n3-device-trial')
 $ErrorActionPreference='Stop'
 if($Shop -notmatch '^[a-zA-Z0-9_-]{1,48}$'){throw '测试店编号仅限字母、数字、下划线、短横线。'}
 $homeDir=Split-Path -Parent $MyInvocation.MyCommand.Path
