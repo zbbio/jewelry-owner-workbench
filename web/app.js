@@ -11,19 +11,19 @@ function storedTask(){try{return localStorage.getItem(stableReadKey)}catch{retur
 function storeTask(t){try{localStorage.setItem(stableReadKey,t)}catch{/* browsing without storage still works */}}
 const limits={count:12,each:8*1024*1024,total:36*1024*1024};
 const types=['image/jpeg','image/png','image/webp'];
-let cards=[], active=null, mode=null, staged=[], lock=false, attempt=null, reviewAttempt=null, retryAttempt=null, openCardId=null;
+let cards=[], active=null, mode=null, staged=[], lock=false, attempt=null, reviewAttempt=null, retryAttempt=null, openCardId=null, cardScope=null, intendedCardId=null, cardReadEpoch=0;
 function option(value,text){const el=make('option',text);el.value=value;return el}
 function thumb(assetId,description){if(!assetId)return null;const img=make('img',null,'thumb');img.loading='lazy';img.alt=description||'本件原图';img.src='/api/assets/'+uri(assetId);return img}
 function button(text,click,klass){const b=make('button',text,klass);b.type='button';b.addEventListener('click',click);return b}
 function tell(msg,error=false){$('notice').hidden=!msg;$('notice').className=error?'error':'';$('notice').textContent=msg}
 function errorMsg(e){return e?.message||'暂时读取失败，请重试。'}
-async function api(path,body,method='POST'){
+async function api(path,body,method='POST',cardMetadata=false){
  const opts={credentials:'same-origin',cache:'no-store'};
  if(body!==undefined){opts.method=method;opts.headers={'Content-Type':'application/json'};opts.body=JSON.stringify(body)}
  let res;try{res=await fetch(path,opts)}catch{throw new Error('连接中断。如果刚刚已提交，先查看任务；重试原操作会沿用原请求号。')}
  let data;try{data=await res.json()}catch{throw new Error('服务没有返回可读的回执，请刷新数据核对。')}
  if(!res.ok){const err=data?.error??data;throw Object.assign(new Error([err?.message||'操作失败',err?.code||('HTTP '+res.status)].join(' · ')),{status:res.status,code:err?.code,taskId:typeof err?.taskId==='string'?err.taskId:null})}
- return data;
+ return cardMetadata?{data,scope:res.headers.get('X-Workbench-Card-Scope')}:data;
 }
 function useLock(val){
  lock=val;
@@ -112,19 +112,54 @@ $('stage-group').addEventListener('click',()=>{if(lock)return;const chosen=[...d
  staged.push({assetIds:chosen,...(c?{targetProductId:c.productId,expectedVersion:c.productVersion}:{})});reviewAttempt=null;drawReview();tell('已加入本次确认，尚未提交。');
 });
 wire('submit-review',async()=>{if(!active||!staged.length)return;reviewAttempt??={requestId:newId(),taskId:active.taskId,groups:staged};tell('正在提交归属确认…');const res=await api('/api/resolve',reviewAttempt);if(!res?.taskId)throw new Error('未取得确认回执，请打开原任务核对。');staged=[];reviewAttempt=null;showTask(res);await refresh(res.taskId);tell('确认回执已返回，商品号和图片以实际回执为准。')});
+const lastCardKey=()=> 'last-card.scope.'+cardScope;
+function clearRejoin(message){++cardReadEpoch;intendedCardId=null;openCardId=null;if(mode)setMode(null);$('card-detail').replaceChildren(make('p',message,'fine'));}
+function clearCardScope(message){cardScope=null;cards=[];asks.clear();notices.clear();showCards();clearRejoin(message);}
+// Card reads do not take the write lock: a newer explicit click can supersede a slow detail request.
+function chooseCard(pid){if(!lock)void openCard(pid).catch(()=>{/* current error is already shown in the card region */});}
 async function openCard(pid,scroll=true){
- const c=await api('/api/cards/'+uri(pid));if(!c?.productId)throw new Error('商品卡不存在或已不可见。');openCardId=c.productId; saveTab('last-card',openCardId);
+ const scope=cardScope;
+ if(!scope)return;
+ const epoch=++cardReadEpoch;
+ intendedCardId=pid;openCardId=null;if(mode)setMode(null);
+ $('card-detail').replaceChildren(make('p','正在读取所选原卡。','fine'));
+ const current=()=>cardReadEpoch===epoch&&cardScope===scope&&intendedCardId===pid;
+ let c;
+ try{
+  const reply=await api('/api/cards/'+uri(pid),undefined,'GET',true);
+  if(!current())return;
+  c=reply.data;
+  if(reply.scope!==scope||c?.productId!==pid)throw new Error('商品卡或店铺校验失败，请刷新后重新选择。');
+ }catch(e){
+  if(!current())return;
+  if([401,403].includes(e.status)){clearCardScope('请登录当前店铺后重新打开原卡。');throw e;}
+  if(e.status===404&&readTab(lastCardKey())===pid)saveTab(lastCardKey(),null);
+  clearRejoin([401,403].includes(e.status)?'请登录当前店铺后重新打开原卡。':e.status===404?'原卡已删除或不可见，请从本店列表重新选择。':'原卡读取失败：'+errorMsg(e));
+  throw e;
+ }
+ openCardId=pid;saveTab(lastCardKey(),pid);if(readTab('last-card')===pid)saveTab('last-card',null);
  const h=$('card-detail');h.replaceChildren();const box=make('article',null,'target');box.dataset.detailProductId=c.productId;join(box,make('h3','商品详情'),make('strong',c.productId),make('small','版本 '+c.productVersion+' · 已关联 '+asArray(c.assetIds).length+' 张原图'));
- const g=make('div',null,'gallery');asArray(c.assetIds).forEach(id=>join(g,thumb(id,'商品原图 '+id)));join(box,g,button('从这张原卡补图',()=>{if(!lock)setMode(c)},'primary'));box.querySelector('button').id='supplement-card';h.append(box);await drawWorkbench(box,c);if(scroll)box.scrollIntoView({block:'start'})
+ const g=make('div',null,'gallery');asArray(c.assetIds).forEach(id=>join(g,thumb(id,'商品原图 '+id)));join(box,g,button('从这张原卡补图',()=>{if(!lock)setMode(c)},'primary'));box.querySelector('button').id='supplement-card';h.append(box);await drawWorkbench(box,c,current);if(scroll&&current())box.scrollIntoView({block:'start'})
 }
 function showCards(){const h=$('cards');h.replaceChildren();$('card-count').textContent=cards.length?'当前本店共有 '+cards.length+' 张商品卡。':'当前还没有商品卡。';for(const c of cards){const row=make('div',null,'card');row.dataset.productId=c.productId;row.dataset.count=asArray(c.assetIds).length;
- const info=make('div');join(info,make('strong',c.productId,'technical'),make('small','版本 '+c.productVersion+' · '+asArray(c.assetIds).length+' 张原图'));const b=button('查看卡片',()=>guarded(()=>openCard(c.productId)));b.classList.add('open-card');join(row,thumb(asArray(c.assetIds)[0]),info,b);h.append(row)}}
+ const info=make('div');join(info,make('strong',c.productId,'technical'),make('small','版本 '+c.productVersion+' · '+asArray(c.assetIds).length+' 张原图'));const b=button('查看卡片',()=>chooseCard(c.productId));b.classList.add('open-card');join(row,thumb(asArray(c.assetIds)[0]),info,b);h.append(row)}}
 async function refresh(preferred){
- const [cs,ts]=await Promise.all([api('/api/cards'),api('/api/tasks')]);if(!Array.isArray(cs)||!Array.isArray(ts))throw new Error('服务返回的卡片或任务列表格式不匹配。');
+ const carry=intendedCardId??openCardId,savedScope=cardScope;let ticket=++cardReadEpoch;
+ let reply,ts;
+ try{[reply,ts]=await Promise.all([api('/api/cards',undefined,'GET',true),api('/api/tasks')]);}
+ catch(e){if(ticket!==cardReadEpoch)return;if([401,403].includes(e.status))clearCardScope('请登录当前店铺后重新打开原卡。');else clearRejoin('暂时未读到本店原卡，请重试。');throw e;}
+ if(ticket!==cardReadEpoch)return;
+ const cs=reply.data;
+ if(!reply.scope||!Array.isArray(cs)||!Array.isArray(ts)){const msg=!reply.scope?'旧版服务未返回店铺范围；请配套升级后重新打开原卡。':'商品或任务列表格式错误，请刷新。';clearCardScope(msg);throw new Error(msg);}
+ if(cardScope!==reply.scope){clearCardScope('正在读取当前店铺。');cardScope=reply.scope;ticket=cardReadEpoch;}
  cards=cs;showCards();const sel=$('history');sel.replaceChildren();for(const record of ts){const id=typeof record==='string'?record:record?.taskId;if(id)sel.append(option(id,id))}
  if(!sel.options.length){sel.append(option('','暂无任务'));active=null;staged=[];reviewAttempt=null;$('review-panel').hidden=true;$('task-detail').textContent='尚无整理任务。'}
  const wanted=preferred||active?.taskId||storedTask();if(wanted&&[...sel.options].some(o=>o.value===wanted))sel.value=wanted;
- $('open-task').disabled=!sel.value;if(sel.value)showTask(await api('/api/tasks/'+uri(sel.value)));openCardId??=readTab('last-card');if(openCardId&&cards.some(c=>c.productId===openCardId))await openCard(openCardId,false);else {openCardId=null;$('card-detail').replaceChildren()} await drawDesk();
+ $('open-task').disabled=!sel.value;if(sel.value){const task=await api('/api/tasks/'+uri(sel.value));if(ticket!==cardReadEpoch)return;showTask(task);}
+ const wantedCard=(savedScope===cardScope?carry:null)??readTab(lastCardKey());
+ if(!wantedCard)clearRejoin(readTab('last-card')?'旧原卡号没有可核对的店铺归属，请从当前店铺主动重新选择。':'当前店铺没有保存的原卡号，请从本店列表选择。');
+ else if(!cards.some(c=>c.productId===wantedCard)){saveTab(lastCardKey(),null);clearRejoin('原卡已删除或不可见，请从本店列表重新选择。');}
+ else await openCard(wantedCard,false);await drawDesk();
 }
 wire('open-task',async()=>{const id=$('history').value;if(id)showTask(await api('/api/tasks/'+uri(id)));tell('已读取保存的任务。')});
 wire('refresh',async()=>{await refresh();tell('已重新读取本店任务和商品卡。')});
@@ -134,7 +169,8 @@ wire('refresh',async()=>{await refresh();tell('已重新读取本店任务和商
 const tabFallback=new Map();
 function readTab(k){try{return sessionStorage.getItem('n3.owner.'+k)}catch{return tabFallback.get(k)||null}}
 function saveTab(k,v){if(v==null)tabFallback.delete(k);else tabFallback.set(k,v);try{if(v==null)sessionStorage.removeItem('n3.owner.'+k);else sessionStorage.setItem('n3.owner.'+k,v)}catch{/* this tab still works */}}
-const pendingKey=pid=>'pending.'+pid;
+const cardScopedKey=(key,pid)=>key+'.scope.'+JSON.stringify([cardScope,pid]);
+const pendingKey=pid=>cardScopedKey('pending',pid);
 function pendingOp(pid){try{const op=JSON.parse(readTab(pendingKey(pid)));return op?.pid===pid?op:null}catch{return null}}
 function field(host,id,title,type,value=''){
  const label=make('label',title);label.htmlFor=id;const e=make(type==='textarea'?'textarea':type==='select'?'select':'input');e.id=id;if(e.tagName==='INPUT')e.type=type;e.value=value??'';join(host,label,e);return e;
@@ -147,6 +183,18 @@ function part(host,id,title,summary){
 }
 function control(host,id,label,action,klass=''){
  const b=button(label,()=>guarded(action),klass);b.id=id;host.append(b);return b;
+}
+// An in-flight sales question belongs to a store/card, not to the whole page.
+const activeAsks=new Set();
+function askControl(host,id,label,pid,action){
+ const scope=cardScope, key=cardScopedKey('ask-flight',pid);
+ const b=button(label,async()=>{
+  if(lock||cardScope!==scope||openCardId!==pid||!b.isConnected||activeAsks.has(key))return;
+  const epoch=cardReadEpoch;
+  activeAsks.add(key);b.disabled=true;b.setAttribute('aria-busy','true');
+  try{await action()}catch(e){if(cardScope===scope&&openCardId===pid&&cardReadEpoch===epoch)tell(errorMsg(e),true)}
+  finally{activeAsks.delete(key);b.disabled=false;b.removeAttribute('aria-busy')}
+ },'primary');b.id=id;host.append(b);return b;
 }
 function sourceUrl(value){
  if(typeof value!=='string'||!value.startsWith('/api/')||value.includes('\\'))return null;
@@ -170,16 +218,32 @@ async function sendOp(op){
  const p='/api/cards/'+uri(op.pid), rule={facts:['PATCH',p],copy:['POST',p+'/copy'],ask:['POST','/api/sales/ask'],setup:['POST',p+'/video/setup'],request:['POST',p+'/video']};
  if(['render','confirm'].includes(op.kind)&&typeof op.taskId==='string')rule[op.kind]=['POST','/api/video/tasks/'+uri(op.taskId)+'/'+op.kind];
  const dest=rule[op.kind];if(!dest||op.pid!==openCardId||(!cards.some(c=>c.productId===op.pid))||(op.kind==='ask'&&op.body?.productId!==op.pid))throw new Error('请从当前商品卡核对这次操作。');
+ const scope=cardScope,epoch=cardReadEpoch,key=pendingKey(op.pid);
+ const current=()=>cardScope===scope&&cardReadEpoch===epoch&&openCardId===op.pid;
  let out;
  try{out=await api(dest[1],op.body,dest[0])}catch(e){
+  if(!current())return;
+  if([401,403].includes(e.status)){clearCardScope('请登录当前店铺后重新打开原卡。');throw e;}
   if(e.status>=400&&e.status<500&&![408,425,429].includes(e.status)){
    saveTab(pendingKey(op.pid),null);$('pending-action')?.replaceChildren();
    if(e.status===409)throw new Error('商品、作品或请求版本已变化，原输入未覆盖现有记录。请先刷新原卡，核对以后再提交。 · '+(e.code||409));
   }else drawRetry(op.pid);
   throw e;
  }
- saveTab(pendingKey(op.pid),null);recordWrite(op,out);
- await refresh();tell(notices.get(op.pid)||'已收到服务回执。');
+ if(op.kind==='ask'){
+  // A late receipt may only settle its original pending request. It must never draw or navigate on B.
+  if(out?.productRef && out.productRef.productId!==op.pid)throw new Error('问答回执不是这件商品，请核对原请求。');
+  if(!current()){
+   if(cardScope===scope&&pendingOp(op.pid)?.body?.requestId===op.body.requestId){
+    saveTab(key,null);recordWrite(op,out);
+   }
+   return;
+  }
+ }
+ if(!current())return;
+ saveTab(key,null);recordWrite(op,out);
+ await refresh();if(cardScope!==scope||openCardId!==op.pid)return out;
+ tell(notices.get(op.pid)||'已收到服务回执。');
  const next={facts:'edit-facts',copy:'edit-copy',ask:'ask-section',setup:'video-section',request:'video-section',render:'video-section',confirm:'video-section'}[op.kind];
  $(next)?.scrollIntoView({block:'start'});return out;
 }
@@ -191,7 +255,8 @@ function drawRetry(pid){
  const h=$('pending-action');if(!h)return;h.replaceChildren();const op=pendingOp(pid);if(!op)return;
  const labels={facts:'保存本件资料',copy:'保存本件介绍',ask:'问本件',setup:'确认本次素材许可',request:'查看或申请本件视频',render:'制作样片',confirm:'确认指定版'};
  join(h,make('strong','有一项操作尚未收到回执'),make('p',(labels[op.kind]||'原操作')+' · 请求号 '+op.body.requestId,'technical'));
- control(h,'retry-write','按原请求重试',()=>sendOp(op),'primary');
+ if(op.kind==='ask')askControl(h,'retry-write','按原请求重试',pid,()=>sendOp(op));
+ else control(h,'retry-write','按原请求重试',()=>sendOp(op),'primary');
 }
 function showAsk(h,c){
  const item=asks.get(c.productId);if(!item)return;
@@ -204,7 +269,7 @@ function showAsk(h,c){
  if(result.video)out.append(make('small','本件视频：'+({queued:'已排队，尚未成片',existing_available:'已有可播版',needs_source:'请补本件素材',needs_review:'需复核许可或文案'}[result.video.outcome]||'见本件视频回执')));
  out.append(make('small','内部问答 · 外店未提交'));h.append(out);
 }
-async function drawWorkbench(box,c){
+async function drawWorkbench(box,c,current){
  const pid=c.productId;
  const pending=make('div');pending.id='pending-action';box.append(pending);drawRetry(pid);
  const nav=make('nav',null,'chapter-nav');nav.setAttribute('aria-label','本件操作');
@@ -227,9 +292,9 @@ async function drawWorkbench(box,c){
  control(copy,'save-copy','保存并确认本件介绍',async()=>{if(!cp.value.trim())throw new Error('请先填写本件介绍。');await mutate(c,'copy',{expectedVersion:c.productVersion,text:cp.value.trim()})});
  const ask=part(box,'ask-section','问本件','这里是店主内部问答。库存没有核实，不会作为现货承诺。');
  const q=field(ask,'ask-input','想问这件什么？','text');q.placeholder='这条多少钱、有货吗？';q.maxLength=500;
- control(ask,'ask-submit','问这件',async()=>{if(!q.value.trim())throw new Error('请先写下想问本件的问题。');let sessionId=readTab('session.'+pid);if(!sessionId){sessionId=newId();saveTab('session.'+pid,sessionId)}await mutate(c,'ask',{sessionId,productId:pid,question:q.value.trim()})},'primary');showAsk(ask,c);
+ askControl(ask,'ask-submit','问这件',pid,async()=>{if(!current()||openCardId!==pid)return;if(!q.value.trim())throw new Error('请先写下想问本件的问题。');const key=cardScopedKey('session',pid);let sessionId=readTab(key);if(!sessionId){sessionId=newId();saveTab(key,sessionId)}await mutate(c,'ask',{sessionId,productId:pid,question:q.value.trim()})});showAsk(ask,c);
  const vh=part(box,'video-section','看本件视频','这里只用本件已确认素材和介绍。生成样片、确认作品与对外发布是三件事。');
- try{const data=await api(cardPath(c,'/video'));if(data.productId!==pid)throw new Error('返回的视频不属于当前原卡。');drawVideo(vh,c,data)}catch(e){vh.append(make('p','视频状态暂未读到：'+errorMsg(e),'fine'));control(vh,'retry-video-read','刷新本件视频',()=>openCard(pid,false))}
+ try{const data=await api(cardPath(c,'/video'));if(!current())return;if(data.productId!==pid)throw new Error('返回的视频不属于当前原卡。');drawVideo(vh,c,data)}catch(e){if(!current())return;vh.append(make('p','视频状态暂未读到：'+errorMsg(e),'fine'));control(vh,'retry-video-read','刷新本件视频',()=>openCard(pid,false))}
  if(notices.has(pid))box.append(make('small',notices.get(pid),'local-notice'));
 }
 function drawVideo(h,c,data){
@@ -243,7 +308,7 @@ function drawVideo(h,c,data){
  join(h,display);if(notices.has(c.productId))h.append(make('small',notices.get(c.productId)));
  const clips=[...playable,...drafts];
  for(const w of clips){
-  const published=playable.includes(w),v=make('video');v.controls=true;v.playsInline=true;v.preload='metadata';v.src=sourceUrl(published?w.playUrl:w.previewUrl);v.dataset.kind=published?'approved':'preview';v.dataset.version=String(w.workVersion);
+  const published=playable.includes(w),v=make('video');v.controls=true;v.playsInline=true;v.preload='metadata';v.src=sourceUrl(published?(w.pinnedPlayUrl??w.playUrl):w.previewUrl);v.dataset.kind=published?'approved':'preview';v.dataset.version=String(w.workVersion);
   const card=make('div',null,'video-work');join(card,make('strong',published?'本件已确认版本':'店主预览 · 等待确认'),make('small','作品 '+w.workId+' · v'+w.workVersion),v);
   const tid=w.taskId||tasks.find(t=>t.workRef?.workId===w.workId||t.workId===w.workId)?.taskId;
   if(!published&&tid)control(card,'confirm-'+uri(tid),'确认使用这个版本 v'+w.workVersion,()=>mutate(c,'confirm',{workVersion:w.workVersion},tid),'primary').dataset.action='confirm';

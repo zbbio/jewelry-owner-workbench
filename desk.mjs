@@ -36,7 +36,7 @@ function openDesk({db,album,catalog,mediaRoot}){
  function view(ctx,p,w,current){
   const {productVersion,workId,workVersion,status}=w;const base='/api/cards/'+enc(p)+'/works/'+enc(workId)+'/'+workVersion+'/';
   return {productId:p,productVersion,workId,workVersion,status,...(productVersion===current&&['approved','awaiting_approval'].includes(status)?{previewUrl:base+'preview'}:{}),
-    ...(productVersion===current&&status==='approved'?{playUrl:base+'play'}:{})};
+    ...(productVersion===current&&status==='approved'?{playUrl:base+'play',pinnedPlayUrl:base+'play?productVersion='+productVersion}:{})};
  }
  async function route({req,res,pathname:s,ctx,jsonBody,respond}){
   const method=req.method,ok=x=>{respond(res,200,x);return true;};let m;
@@ -75,6 +75,11 @@ function openDesk({db,album,catalog,mediaRoot}){
   }
   if((m=/^\/api\/cards\/([^/]+)\/works\/([^/]+)\/(\d+)\/(preview|play)$/.exec(s))&&['HEAD','GET'].includes(method)){
    const q={productId:id(m[1]),workId:id(m[2]),workVersion:version(Number(m[3]))};
+   if(m[4]==='play'){
+    const pins=new URL(req.url,'http://localhost').searchParams.getAll('productVersion');
+    // Bare links already identify the exact work/version, and are still checked for current approval.
+    if(pins.length){if(pins.length!==1||!/^[1-9]\d*$/.test(pins[0]))throw problem('INVALID_VERSION','商品版本无效，请从原卡重新取回。');q.productVersion=version(Number(pins[0]));}
+   }
    const stream=required(m[4]==='play'?studio.openOldVideo(ctx,q):studio.openPreview(ctx,q));if(!stream.bytes?.length)throw notFound();
    mediaBytes(req,res,stream.bytes);return true;
   }

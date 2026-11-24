@@ -62,12 +62,12 @@ const server=http.createServer(async(req,res)=>{
   let m;
   if(req.method==='GET'){
    if(siteFiles.has(pathname)){const [f,mime]=siteFiles.get(pathname);return respond(res,200,readFileSync(path.join(home,'web',f)),mime);}
-   if(pathname==='/api/cards')return respond(res,200,await catalog.list(ctx));
+   if(pathname==='/api/cards'){res.setHeader('X-Workbench-Card-Scope',encodeURIComponent(ctx.shopId));return respond(res,200,await catalog.list(ctx));}
    if(pathname==='/api/tasks')return respond(res,200,(await album.listTasks(ctx)).map(reviewView));
    if(m=/^\/api\/(cards|assets|tasks)\/([^/]+)$/.exec(pathname)){
     const [,kind,enc]=m;let id;try{id=decodeURIComponent(enc);}catch{throw issue('INVALID_ID','编号错误。');}
     if(kind==='assets'){const a=await album.readAsset(ctx,id);if(a?.bytes)return respond(res,200,a.bytes,a.mime||'application/octet-stream');}
-    else {const a=kind==='cards'?await catalog.get(ctx,id):reviewView(await album.getTask(ctx,id));if(a)return respond(res,200,a);}
+    else {const a=kind==='cards'?await catalog.get(ctx,id):reviewView(await album.getTask(ctx,id));if(a){if(kind==='cards')res.setHeader('X-Workbench-Card-Scope',encodeURIComponent(ctx.shopId));return respond(res,200,a);}}
    }
   }else if(req.method==='POST'&&['/api/import','/api/resolve','/api/retry'].includes(pathname)){
    if(req.headers.origin!==origin)throw issue('INVALID_ORIGIN','仅接受本机工作台页面的操作。',403);

@@ -151,7 +151,12 @@ export function createContent({ db, getProduct, listOldVideos, resolveInputs, re
     const v = visibleClips(scope,pid).find(x => x.workId === wid && x.workVersion === ver && licensed(x));
     const playable = v && readRevision(v);
     if (!playable) fail('WORK_NOT_AVAILABLE',404);
-    return { productId:pid, workId:wid, workVersion:ver, ...playable };
+    // An explicitly pinned card version is checked only after confirming this exact licensed work.
+    if (input.productVersion !== undefined) {
+      if (!validVersion(input.productVersion)) fail('INVALID_INPUT',400);
+      if (p.productVersion !== input.productVersion) fail('PRODUCT_VERSION_CONFLICT',409);
+    }
+    return { productId:pid, productVersion:p.productVersion, workId:wid, workVersion:ver, ...playable };
   }
   return { requestVideo, getTask, openOldVideo };
 }

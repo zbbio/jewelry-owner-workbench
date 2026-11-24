@@ -107,6 +107,15 @@ test('Approved selection survives new draft and restart; exact HTTP bytes, B iso
   const saleB=await json('/api/sales/ask',{...saleRequest,requestId:rid(),productId:B.productId});
   assert.equal(saleB.video.productId,B.productId);assert.equal(saleB.video.outcome,'needs_review');assert.equal(saleB.video.workRef,undefined);
   for(const url of [v2,b+rel+'/1/play',b+rel+'/2/preview',a+rel+'/3/play'])await take(url,{range:'bytes=0-31',status:404});
+  const approvedCardVersion=String(pv);
+  const pinned=v1+'?productVersion='+approvedCardVersion;
+  assert.equal(aList.works.find(w=>w.workVersion===1).pinnedPlayUrl,pinned);
+  const pinnedBytes=await take(pinned,{range:'bytes=0-31',status:206});
+  const legacyBytes=await take(v1,{range:'bytes=0-31',status:206});
+  assert.deepEqual(pinnedBytes.bytes,legacyBytes.bytes);
+  await take(v1+'?productVersion='+(Number(approvedCardVersion)+1),{range:'bytes=0-31',status:409});
+  await take(v1+'?productVersion=invalid',{range:'bytes=0-31',status:400});
+  await take(pinned+'&productVersion='+approvedCardVersion,{range:'bytes=0-31',status:400});
   await take(v1,{range:'bytes=0-31',status:401,auth:false});
 
   const head=await take(v1,{method:'HEAD'}), n=Number(head.headers['content-length']);
