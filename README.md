@@ -58,7 +58,7 @@ pwsh.exe -NoProfile -File '.\启动隔离手机试用.ps1' -UsbAndroid
 
 - 快速切换商品时，只显示最后选中的商品；上一件的迟到答复不会串到当前商品。更新后若提示旧商品记录不带店铺信息，请在本店重新选一次商品。
 - 可在原商品卡取回已确认的视频。旧播放链接仍可用；从商品卡发出的新链接会核对商品版本，版本不符时提示重新打开。
-- 本次公开更新仍是本地网页试用，不包括安卓安装包、真实店铺图片、线上后端或模型凭据。
+- 本次公开更新仍是本地网页试用；仓库新增 Android 壳源码，但不附 APK、真实店铺图片、线上后端或模型凭据。
 
 ### 回归与实测边界
 
@@ -76,3 +76,15 @@ node --test '.\tests\launcher-powershell.test.mjs'
 ## 许可
 
 本仓库的项目代码和公开版图标使用 [MIT 许可证](LICENSE)。运行时单独安装的库、FFmpeg、编码器和系统字体保留各自条款；MIT 不授予他人照片、商品或音视频的使用权。
+
+## Android 壳源码（新增）
+
+本仓现在也包含 `android/n14-shell/`：这是可构建的 Android WebView 壳源码。它连接电脑上的本店助手，适合 USB 试用；源码里没有 APK、签名私钥、DeepSeek 密钥、真实店铺图片或商品数据库。
+
+```powershell
+Set-Location .\android\n14-shell
+python -B .\build_apk.py
+python -B .\build_apk.py --verify-only
+```
+
+注意：这不是公网独立版。手机关掉电脑后要继续使用，需要先部署 HTTPS 云端服务，再把壳里的本机地址改为云端地址并重新验收。

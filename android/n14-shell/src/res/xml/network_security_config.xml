@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- The app has no TLS destinations. Do not grant trust to public or device-added CAs. -->
+    <base-config cleartextTrafficPermitted="false"><trust-anchors /></base-config>
+    <!-- Network Security Config is host-only. OriginPolicy separately fixes the port. -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">127.0.0.1</domain>
+    </domain-config>
+</network-security-config>
