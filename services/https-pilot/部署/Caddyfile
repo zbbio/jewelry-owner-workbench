@@ -1,0 +1,17 @@
+{
+  admin off
+  auto_https off
+}
+
+https://{$N15_APPROVED_DOMAIN}:8443 {
+  tls /run/n15-tls/fullchain.pem /run/n15-tls/privkey.pem
+  header Strict-Transport-Security "max-age=31536000"
+  reverse_proxy unix//run/n15/backend.sock {
+    header_up Host {$N15_APPROVED_DOMAIN}
+    header_up -Forwarded
+    header_up -X-Forwarded-Host
+    header_up -X-Forwarded-Proto
+    header_up -X-Forwarded-For
+    header_up -X-Forwarded-Port
+  }
+}

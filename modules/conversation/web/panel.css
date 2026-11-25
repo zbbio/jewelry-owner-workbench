@@ -1,0 +1,7 @@
+/* K1: all new styles are scoped to the history panel or its entry button. */
+#k1-panel{box-sizing:border-box;width:min(94vw,44rem);max-height:90vh;overflow:auto;background:#fffcf7;color:#252d28;border:1px solid #c7c5b5;border-radius:16px;padding:1.1rem 1.3rem;font:16px/1.5 system-ui;}
+#k1-panel::backdrop{background:rgba(22,34,30,.48)}#k1-panel header,.k1-line{display:flex;gap:.6rem;align-items:center;flex-wrap:wrap}#k1-panel header{justify-content:space-between}
+#k1-panel h2,#k1-panel h3{margin:.35em 0}#k1-panel form,#k1-panel nav,#k1-panel section{margin:.7rem 0}#k1-panel input,#k1-panel textarea{box-sizing:border-box;max-width:100%;min-width:8em;font:inherit;border:1px solid #9ba99e;border-radius:.4rem;padding:.35em .5em}#k1-text{display:block;width:100%;margin:.3rem 0}
+#k1-panel button,#k1-launch{cursor:pointer;font:inherit;border:1px solid #778c7d;border-radius:1.2em;background:white;color:#17472e;padding:.28em .85em}#k1-panel button:disabled{opacity:.5;cursor:default}
+#k1-topics{display:flex;flex-wrap:wrap;gap:.35rem;margin:.4rem 0}#k1-topics [aria-current=true]{background:#184c35;color:white}#k1-messages{max-height:32vh;overflow:auto}#k1-panel article{padding:.55rem;margin:.35rem 0;border-left:3px solid #c1cbbf;background:#f4f5ed;overflow-wrap:anywhere;white-space:pre-wrap}
+#k1-panel article:focus{outline:2px solid #386949;outline-offset:-2px}#k1-panel article p{margin:.15em 0}#k1-panel small,#k1-note{color:#475c50}

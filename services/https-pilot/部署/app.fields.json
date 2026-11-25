@@ -1,0 +1,12 @@
+{
+  "schema":1,
+  "publicOrigin":"https://APPROVED_DOMAIN_REQUIRED",
+  "storeRef":"APPROVED_PRIVATE_STORE_REF_REQUIRED",
+  "snapshotFile":"/run/n15-private/card-snapshot.json",
+  "snapshotSha256":"APPROVED_PRIVATE_SNAPSHOT_DIGEST_REQUIRED",
+  "stateDir":"/var/lib/n15",
+  "socketPath":"/run/n15/backend.sock",
+  "modelId":"deepseek-flash",
+  "modelPolicy":"enabled",
+  "modelSecretFile":"/run/n15-private/deepseek-current"
+}

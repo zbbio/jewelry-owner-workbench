@@ -7,7 +7,7 @@
   "description": "A local-first jewelry workbench for shop owners: albums, product cards, sales, and approved videos.",
   "scripts": {
     "start": "node server.mjs",
-    "test": "node --test"
+    "test": "node scripts/test-workbench.mjs"
   },
   "engines": {
     "node": ">=23.0.0"

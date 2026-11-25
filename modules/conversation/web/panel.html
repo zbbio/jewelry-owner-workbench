@@ -1,0 +1,10 @@
+<dialog id="k1-panel" aria-labelledby="k1-heading">
+  <header><div><small>珠宝店主助手</small><h2 id="k1-heading">本店话题</h2></div><button id="k1-close" type="button">关闭</button></header>
+  <form id="k1-new"><label for="k1-title">新话题名称</label><div class="k1-line"><input id="k1-title" maxlength="80" required placeholder="例如：本周补货"><button id="k1-create">新建话题</button></div></form>
+  <nav aria-label="最近话题"><h3>最近话题</h3><div id="k1-topics"></div><button id="k1-more-topics" type="button" hidden>更多话题</button></nav>
+  <section aria-labelledby="k1-active"><h3 id="k1-active">请选择话题</h3>
+    <div class="k1-line"><button id="k1-older" type="button" hidden>更早的消息</button><button id="k1-back-last" type="button" disabled>定位最近消息</button></div>
+    <div id="k1-messages" aria-label="本话题消息"></div>
+    <form id="k1-form"><label for="k1-text">发到当前话题</label><textarea id="k1-text" maxlength="500" rows="2" disabled required></textarea><button id="k1-send" disabled>发送</button></form>
+  </section><p id="k1-note" role="status" aria-live="polite"></p>
+</dialog>

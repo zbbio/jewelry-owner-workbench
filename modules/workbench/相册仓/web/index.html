@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="light"><title>珠宝店主助手</title>
+<link rel="stylesheet" href="/n22-base.css"><link rel="stylesheet" href="/n22-app.css">
+<script src="/request-id.js" defer></script><script src="/n22-app.js" defer></script>
+</head>
+<body>
+<div class="app">
+<header class="mast"><div class="identity"><span class="sig"><svg viewBox="0 0 30 30" fill="none" aria-hidden="true"><path d="m15 3 9 10-9 14-9-14zM6 13h18m-14-5 5 19 5-19" stroke="currentColor" stroke-width="1.35"/></svg></span><div><strong>珠宝店主助手</strong><small>本店工作台</small></div></div>
+<span class="edition">N22 · 本机</span></header>
+<main class="inner n22">
+<section class="hero" aria-labelledby="title"><span class="eyebrow">店主的珠宝手记</span>
+<h1 id="title">今天要帮你做什么？</h1>
+<p>直接告诉我。可以整理本次选的照片、查价格，或找本件以前的视频。</p>
+<p id="connection" class="hint" role="status">正在连接本机助手…</p>
+<button id="recover" type="button" hidden>查看上次整理</button>
+<button id="resume" type="button" hidden>查看上一条商品结果</button>
+</section>
+<section id="thread" class="thread" aria-label="本店助手对话" role="log" aria-live="polite"></section>
+<form id="composer" class="composer">
+<label for="prompt">给本店助手留言</label>
+<textarea id="prompt" rows="2" maxlength="1000" placeholder="例如：把这批珠宝照片按品类分一下，先别建档。"></textarea>
+<div id="attachment" class="hint" aria-live="polite">只读取你为这条消息选的照片。</div>
+<div class="composer-actions">
+<input id="photos" type="file" accept="image/jpeg,image/png,image/webp" multiple hidden>
+<button id="choose" type="button">选择照片</button><button id="clearPhotos" type="button" hidden>移除此消息的照片</button>
+<button class="primary" id="send" type="submit">发送</button></div>
+</form>
+</main>
+</div></body>
+</html>

@@ -19,3 +19,15 @@ evidence/
 *-temp-*/
 -test-runs/
 .DS_Store
+
+*.apk
+*.aab
+*.p12
+*.jks
+*.keystore
+*.dpapi
+android/*/build/
+android/*/成品/
+android/n14-service/agent/dist/
+__pycache__/
+.local-tests/

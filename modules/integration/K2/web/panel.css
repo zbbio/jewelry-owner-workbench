@@ -1,0 +1,9 @@
+#k2-panel{box-sizing:border-box;position:relative;color:#203a32;background:#fffdf7;border:1px solid #b9cdc3;border-radius:14px;margin:1rem auto;padding:1rem;width:min(94%,48rem);overflow-wrap:anywhere}
+#k2-panel[hidden]{display:none!important}
+#k2-panel header,.k2-controls{display:flex;align-items:center;justify-content:space-between;gap:.6rem;flex-wrap:wrap}
+#k2-panel h2{margin:0;font-size:1.2rem}#k2-panel h3{font-size:1rem;margin:.9rem 0 .25rem}
+#k2-panel .k2-hint,.k2-ticket small{color:#4d655b}
+#k2-panel button,#k2-open,.k2-ticket button{font:inherit;padding:.4rem .7rem;border-radius:8px;border:1px solid #abbdb2;background:#fafcf9;color:#194737;cursor:pointer}
+#k2-open{font-size:.88rem}#k2-panel nav button,#k2-pending button,#k2-recent button{display:block;text-align:left;margin:.35rem 0;max-width:100%}
+#k2-panel p{margin:.35rem 0}#k2-ready{padding-left:1.15rem}.k2-ticket{border-left:3px solid #967033;padding:.4rem .65rem;margin:.5rem 0;background:#fffaf0}
+.k2-ticket button{margin:.15rem .5rem .15rem 0}.k2-ticket button:disabled{opacity:.6}

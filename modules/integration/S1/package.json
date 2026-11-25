@@ -1,0 +1,22 @@
+{
+  "name": "jewelry-owner-agent-test-shop",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "description": "N99 S1: owner-turn shared SDK, two free-choice read-only tools",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "node --test --test-isolation=none test/*.test.mjs"
+  },
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "dependencies": {
+    "@openai/agents": "0.22.0",
+    "openai": "7.62.0"
+  },
+  "devDependencies": {
+    "@types/node": "22.15.30",
+    "typescript": "5.9.3"
+  }
+}

@@ -1,0 +1,12 @@
+*
+!package.json
+!package-lock.json
+!config.mjs
+!state.mjs
+!serve.mjs
+!ops.mjs
+!agents-deepseek.mjs
+!verify-build.mjs
+!public/
+!public/index.html
+!public/pair.mjs

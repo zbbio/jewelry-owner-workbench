@@ -1,0 +1,55 @@
+{
+  "commit": "e8479330f7284dd0031649636e18e197d6633ece",
+  "upstream": "https://github.com/wangzan101/Mika",
+  "file": "companions/mika/scripts/mika_desk/desk.js",
+  "gitBlob": "ee01ced7b77d2d5e4a855e7e65020d8f00f4abcf",
+  "sourceSha256": "29b013a0a22f67d1da2e98b5c7686c884a5b62c75bb18ba0a34ddf47ae7eb5cb",
+  "slices": [
+    {
+      "lines": [
+        218,
+        229
+      ],
+      "symbols": "tones, terminal",
+      "sha256": "8bab29fa5b4c38ccf195ded663958f92b920216586fea61c19762533062ce586"
+    },
+    {
+      "lines": [
+        231,
+        233
+      ],
+      "symbols": "isActive, urgency, threadOf",
+      "sha256": "779e1eabeddc0564470f1ddd4b41cfedb30a2fce406bc69fb966752bca18afc0"
+    },
+    {
+      "lines": [
+        244,
+        257
+      ],
+      "symbols": "groupTasks",
+      "sha256": "1dd50be57e4fa8dbab39e2ac1e04475decb7db0350f4a2237ed45a06febc7657"
+    }
+  ],
+  "groupTasksFileSha256": "9c294c277fd1dc944d79995e95c33cc4590bca0853474f3a49104746234bd095",
+  "license": "companions/mika/LICENSE and root LICENSE are identical; root NOTICE and the full upstream third-party inventory retained.",
+  "notices": [
+    {
+      "upstreamPath": "companions/mika/LICENSE",
+      "local": "licenses/LICENSE",
+      "gitBlob": "d645695673349e3947e8e5ae42332d0ac3164cd7",
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+    },
+    {
+      "upstreamPath": "NOTICE",
+      "local": "licenses/NOTICE",
+      "gitBlob": "a993d60af679c537beef9c484e7fd9b9f6aa3ada",
+      "sha256": "7d49ef5ff477ad1a79db8050c7242498a03874e9ac70e7c8f741baeea6a33f24"
+    },
+    {
+      "upstreamPath": "licenses/THIRD_PARTY_NOTICES.md",
+      "local": "licenses/THIRD_PARTY_NOTICES.md",
+      "gitBlob": "fcaacdc40cd75c58d32a38c242c57f7c101f3869",
+      "sha256": "500a835be2706325cde8d687108d6b82c66e53f5951c44fbbad6ac89d8bd5fcf"
+    }
+  ]
+}

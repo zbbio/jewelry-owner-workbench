@@ -1,0 +1,47 @@
+services:
+  backend:
+    profiles: [approved-deploy]
+    image: ${N15_BACKEND_IMAGE:?signed-or-pinned-backend-image-required}
+    pull_policy: never
+    user: "1000:1000"
+    read_only: true
+    init: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    environment:
+      N15_CONFIG: /run/n15-private/app.json
+    volumes:
+      - ${N15_STATE_DIR:?private-state-dir-required}:/var/lib/n15
+      - ${N15_SOCKET_DIR:?private-shared-socket-dir-required}:/run/n15
+      - ${N15_PRIVATE_DIR:?read-only-operator-input-dir-required}:/run/n15-private:ro
+    restart: unless-stopped
+    stop_grace_period: 60s
+    healthcheck:
+      test: ["CMD", "node", "ops.mjs", "ready"]
+      interval: 15s
+      timeout: 4s
+      retries: 4
+  https_proxy:
+    profiles: [approved-deploy]
+    image: ${N15_PROXY_IMAGE:?pinned-Caddy-image-required}
+    pull_policy: never
+    depends_on:
+      backend:
+        condition: service_healthy
+    user: "1000:1000"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    environment:
+      N15_APPROVED_DOMAIN: ${N15_APPROVED_DOMAIN:?approved-real-domain-required}
+      XDG_CONFIG_HOME: /tmp
+      XDG_DATA_HOME: /tmp
+    command: ["caddy", "run", "--config", "/etc/caddy/Caddyfile", "--adapter", "caddyfile"]
+    tmpfs: ["/tmp:uid=1000,gid=1000,mode=0700"]
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ${N15_SOCKET_DIR:?private-shared-socket-dir-required}:/run/n15:ro
+      - ${N15_TLS_DIR:?approved-private-TLS-dir-required}:/run/n15-tls:ro
+    ports:
+      - "${N15_LISTEN_IP:?approved-bind-IP-required}:443:8443/tcp"
+    restart: unless-stopped

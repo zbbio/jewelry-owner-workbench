@@ -1,0 +1,23 @@
+{
+  "name": "jewelry-owner-agent-test-shop",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "description": "OpenAI Agents SDK and DeepSeek: read-only original merchant test cards",
+  "scripts": {
+    "build": "node verify-build.mjs",
+    "start": "node serve.mjs",
+    "test": "node --test tests/backend.test.mjs"
+  },
+  "engines": {
+    "node": ">=22.13"
+  },
+  "dependencies": {
+    "@openai/agents": "0.22.0",
+    "openai": "7.62.0"
+  },
+  "devDependencies": {
+    "@types/node": "22.15.30",
+    "typescript": "5.9.3"
+  }
+}
