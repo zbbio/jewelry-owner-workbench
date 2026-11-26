@@ -31,3 +31,7 @@ android/*/成品/
 android/n14-service/agent/dist/
 __pycache__/
 .local-tests/
+
+# Portable binaries are distributed separately from public source.
+/demos/owner-assistant/runtime/
+/demos/owner-assistant/userdata/
