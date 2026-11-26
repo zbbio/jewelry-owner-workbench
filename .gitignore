@@ -35,3 +35,4 @@ __pycache__/
 # Portable binaries are distributed separately from public source.
 /demos/owner-assistant/runtime/
 /demos/owner-assistant/userdata/
+/demos/owner-assistant/.setup/
