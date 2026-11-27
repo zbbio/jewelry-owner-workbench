@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>珠宝店主助手 MVP</title><style>:root{--ink:#23372f;--dim:#586960;--quiet:#64746b;--green:#215c47;--pale:#eaf1e8;--paper:#fafaf5;--line:#dbe0d6;--card:#fffefa;--serif:"Noto Serif SC","Songti SC","SimSun",serif;font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",sans-serif;color:var(--ink);background:var(--paper)}
+.ic{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.app{height:100vh;height:100dvh;display:grid;grid-template-rows:auto minmax(0,1fr) auto;max-width:1040px;margin:0 auto}
+.mast{display:flex;align-items:center;justify-content:space-between;padding:17px 34px;border-bottom:1px solid var(--line);gap:12px}
+.identity{gap:11px}
+.sig{display:grid;place-items:center;width:39px;height:39px;border-radius:14px;background:var(--green);color:#fff}
+.sig svg{width:25px;height:25px}
+.name{font-weight:650;font-size:18px;line-height:1.3;letter-spacing:.03em}
+.sub{font-size:10px;color:var(--quiet);letter-spacing:.08em}
+.view{min-height:0;overflow:auto;scrollbar-width:thin;overscroll-behavior:contain}
+.inner{width:min(100%,760px);padding:0 24px;margin:0 auto}
+.welcome{padding:clamp(26px,6vh,68px) 0 19px}
+.dock{width:min(100%,760px);margin:auto;padding:4px 24px max(12px,env(safe-area-inset-bottom));background:var(--paper)}
+.rail-info{font-size:10px;letter-spacing:.09em;color:var(--quiet);display:flex;justify-content:space-between;align-items:center;padding:0 1px}
+.rail{display:flex;overflow-x:auto;overscroll-behavior-x:contain;gap:7px;padding:5px 1px 9px;scrollbar-width:thin;scroll-snap-type:x proximity}
+.pill{border:1px solid var(--line);border-radius:20px;background:var(--card);font-size:12px;gap:6px;white-space:nowrap;padding:7px 11px;scroll-snap-align:start;flex:none}
+.pill .ic{width:15px;height:15px}
+.entry{gap:8px;background:var(--card);border:1px solid #bcc8b9;border-radius:20px;padding:7px 9px;box-shadow:0 2px 10px #2846320a}
+.entry:focus-within{border-color:#54846b}
+.entry textarea{width:100%;min-width:0;resize:none;background:transparent;border:0;outline:none;padding:5px 0;color:var(--ink);line-height:1.5;height:35px}
+.entry textarea::placeholder{color:#718075}
+.send{width:35px;height:35px;background:var(--green);color:white;border-radius:50%;justify-content:center;padding:0;flex:none}
+.send .ic{width:18px;height:18px}
+
+*{box-sizing:border-box}body{margin:0;color:var(--ink);background:#f8faf6}
+button,textarea{font:inherit}button{color:inherit;cursor:pointer}button:disabled{opacity:.5;cursor:wait}
+button:focus-visible,a:focus-visible{outline:2px solid #3b725f;outline-offset:2px}
+[hidden]{display:none!important}.symbols{position:absolute;width:0;height:0;overflow:hidden}
+.app{width:100%;grid-template-columns:minmax(0,1fr)}.app>*{min-width:0}
+.mast{justify-content:flex-start;padding:14px 25px}.identity{display:flex;align-items:center}.sig{background:#398563;width:44px;height:44px;border-radius:12px}
+.sub{font-size:12px;letter-spacing:0;margin-top:2px}.name{font-size:19px}
+.view>.inner{min-height:100%;display:flex;flex-direction:column}
+.welcome{margin:auto 0;padding:24px 0 38px}
+.welcome h1{font-size:clamp(26px,5vw,38px);line-height:1.2;letter-spacing:.01em;margin:0 0 8px;color:#153c30}
+.welcome p{font-size:clamp(17px,4.5vw,23px);color:#173e31;font-weight:680;margin:0 0 22px}
+.suggestions{display:grid;gap:9px;justify-items:start}
+.quick{display:flex;align-items:center;gap:10px;max-width:100%;min-height:43px;text-align:start;padding:8px 15px 8px 10px;border:1px solid #e7eee7;border-radius:24px;background:#fff;box-shadow:0 3px 8px #30523a0a;font-weight:620}
+.badge{display:grid;place-items:center;width:29px;height:29px;border-radius:11px;background:#d7f0e7;color:#276149;flex:none}
+.quick .ic{width:15px;height:15px}
+.dock{background:#f8faf6;padding-top:8px}
+.rail{min-width:0;max-width:100%;scrollbar-width:none}.rail::-webkit-scrollbar{display:none}.rail-info{font-size:12px;letter-spacing:0}
+.pill{display:flex;align-items:center;gap:6px;justify-content:center;min-width:101px;min-height:37px;font-size:13px}
+.entry{display:flex;align-items:center;border-radius:26px;padding:6px 8px 6px 14px}
+.entry textarea{min-height:38px;line-height:24px;align-self:center}.entry textarea:focus-visible{outline:none}
+.send{display:flex;align-items:center;border:0;width:38px;height:38px;background:#398563}
+#log{margin:14px 0 18px}
+@media(max-width:580px){.mast{padding:12px 15px}.inner,.dock{padding-left:16px;padding-right:16px}.welcome{padding-bottom:25px}.mast .sig{width:39px;height:39px}.name{font-size:17px}}
+@media(max-height:525px){.welcome{margin:0;padding:12px 0}.welcome p{margin-bottom:10px}.dock{padding-top:3px}}
+
+#log{display:flex;flex-direction:column;align-items:flex-start;gap:10px;margin:12px 0}
+.msg{box-sizing:border-box;max-width:84%;min-width:0;padding:10px 14px;border-radius:12px;white-space:pre-wrap;overflow-wrap:anywhere}
+.msg--owner{align-self:flex-end;background:#c3ebae}
+.msg--assistant{background:#fff}
+.msg--status{align-self:center;max-width:100%;padding:4px 8px;color:#465850;text-align:center;font-size:14px}
+.tool{color:#687a72;font-size:13px}
+.album-result{display:inline-block;padding:18px 24px;margin:14px 0;background:#175640;color:white;border-radius:14px;font-size:22px;font-weight:700;text-decoration:none;min-height:58px;max-width:100%;box-sizing:border-box}.album-result:focus{outline:3px solid #ad8b43}</style></head><body>
+<svg class="symbols" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><defs><symbol id="gem" viewBox="0 0 24 24"><path d="m3 9 4-5h10l4 5-9 12zM3 9h18M7 4l5 17 5-17"/></symbol>
+<symbol id="pic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="9" r="1.6"/><path d="m4 18 5-5 3 3 3-5 5 6"/></symbol>
+<symbol id="bag" viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="15" rx="3"/><path d="M8 7V5a4 4 0 0 1 8 0v2m-8 6h8m-8 4h5"/></symbol>
+<symbol id="chat" viewBox="0 0 24 24"><path d="M20 11.5c0 4-3.4 7.4-8.2 7.4a12 12 0 0 1-3.1-.4l-4.3 1 1.1-3.3A7.2 7.2 0 0 1 3.6 11c0-4 3.7-7.4 8.2-7.4S20 7.3 20 11.5z"/><path d="M8 10h7m-7 3h4"/></symbol>
+<symbol id="style" viewBox="0 0 24 24"><path d="m12 2 2.2 6.2 5.8 2.3-5.8 2.2L12 19l-2.2-6.3L4 10.5l5.8-2.3zM19 16l.9 2.1L22 19l-2.1.9L19 22l-.9-2.1L16 19l2.1-.9z"/></symbol>
+<symbol id="arr" viewBox="0 0 24 24"><path d="m5 13 7-7 7 7m-7-7v14"/></symbol></defs></svg>
+<div class="app"><header class="mast"><div class="identity"><span class="sig"><svg viewBox="0 0 30 30" fill="none" aria-hidden="true"><path d="m15 3 9 10-9 14-9-14zM6 13h18m-14-5 5 19 5-19" stroke="currentColor" stroke-width="1.35"/></svg></span><div><div class="name">珠宝智能体</div><div class="sub">测试店 · 演示资料</div></div></header>
+<main id="view" class="view"><div class="inner">
+<section class="welcome" id="welcome"><h1>Hi，店主 👋</h1><p>今天想让珠宝智能体帮你做什么？</p>
+<div id="suggestions" class="suggestions" aria-label="推荐指令"></div></section>
+<section id="log" aria-label="对话消息" hidden></section></div></main>
+<footer class="dock"><div class="rail-info"><span>工作能力</span><span>可横向滑动</span></div>
+<nav id="rail" class="rail" aria-label="四项工作能力"></nav>
+<form id="form" class="entry"><textarea id="q" rows="1" aria-label="消息内容" placeholder="说说你想做什么…"></textarea>
+<button id="send" type="submit" class="send" aria-label="发送消息" title="发送"><svg class="ic" aria-hidden="true"><use href="#arr"/></svg></button></form></footer></div>
+<script>
+const log=document.querySelector('#log'),q=document.querySelector('#q'),view=document.querySelector('#view');let busy=false;
+function addMessage(kind,label,text,tool){const box=document.createElement('div');box.className='msg msg--'+kind;if(tool){const note=document.createElement('div');note.className='tool';note.textContent=tool;box.append(note);}if(label){const title=document.createElement('b');title.textContent=label+'：';box.append(title);}box.append(document.createTextNode(text));log.append(box);view.scrollTop=view.scrollHeight;return box;}
+async function run(text){if(!text||busy)return;busy=true;document.querySelector('#welcome').hidden=true;document.querySelector('#log').hidden=false;document.querySelectorAll('button').forEach(b=>b.disabled=true);addMessage('owner','店主',text);q.value='';const pending=addMessage('status','','正在处理，请稍候；相册或商品卡批量任务需要几分钟。');pending.setAttribute('role','status');
+try{const res=await fetch('/api/chat',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({text})});const r=await res.json();pending.remove();const failed=Boolean(r.error&&!r.reply);const answer=addMessage(failed?'status':'assistant',failed?'':'助手',(r.reply||r.error||'本次暂未完成').replace(/<a\b[^>]*>[\s\S]*?<\/a>/g,''),failed?null:r.mode+' · '+(r.tool||'未调用工具'));if(failed)answer.setAttribute('role','status');if(r.receipt?.status==='completed'){const target=r.tool==='album_classify_batch'?['/gallery','查看分好的照片 →']:r.tool==='catalog_create_or_read_card'&&r.receipt.result?.classificationMode==='deepseek_vision'?['/catalog','查看商品卡 →']:null;if(target){const a=document.createElement('a');a.className='album-result';a.href=target[0];a.target='_blank';a.rel='noopener';a.textContent=target[1];answer.append(document.createElement('br'),a);}}}
+catch{pending.textContent='连接暂时中断，请查看已有分类相册或商品卡，再重试。';}finally{view.scrollTop=view.scrollHeight;busy=false;document.querySelectorAll('button').forEach(b=>b.disabled=false);}}
+
+const picks=[{"key":"album","icon":"pic","question":"帮我整理今天的照片","label":"相册整理","text":"把今天这批珠宝照片按实物分组，先不要建卡"},{"key":"catalog","icon":"bag","question":"帮我准备商品卡草稿","label":"商品档案","text":"根据刚才的分类结果，自动为每件建立一个结构化商品卡 JSON 文件，字段包括颜色、品类、类型、材质、形态，先保存草稿"},{"key":"sales","icon":"chat","question":"帮我回复顾客的商品问题","label":"销售问答","text":"客人问 DEMO105 是什么材质，帮我回一句，先别发"},{"key":"style","icon":"style","question":"帮我准备短视频方案","label":"风格内容","text":"想看戴起来多大，给我列三个镜头，先别做片"}];
+function makeChoice(item,full){
+ const icon=document.createElementNS('http://www.w3.org/2000/svg','svg');
+ icon.setAttribute('class','ic');icon.setAttribute('aria-hidden','true');
+ const ref=document.createElementNS(icon.namespaceURI,'use');ref.setAttribute('href','#'+item.icon);icon.append(ref);
+ const b=document.createElement('button');b.type='button';b.className=full?'quick':'pill';b.dataset.preset=item.key;
+ if(full){const badge=document.createElement('span');badge.className='badge';badge.append(icon);b.append(badge);}
+ else b.append(icon);
+ b.append(document.createTextNode(full?item.question:item.label));
+ b.addEventListener('click',()=>{q.value=item.text;q.focus({preventScroll:true});});
+ return b;
+}
+for(const item of picks){
+ document.querySelector('#suggestions').append(makeChoice(item,true));
+ document.querySelector('#rail').append(makeChoice(item,false));
+}
+document.querySelector('#form').onsubmit=e=>{e.preventDefault();run(q.value.trim());};
+</script></body></html>

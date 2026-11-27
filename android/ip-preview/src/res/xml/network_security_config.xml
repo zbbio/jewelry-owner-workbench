@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- IP demo only. No broader cleartext exception or certificate override. -->
+    <base-config cleartextTrafficPermitted="false"><trust-anchors /></base-config>
+    <!-- Network Security Config is host-only. OriginPolicy separately fixes the port. -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">47.112.195.20</domain>
+    </domain-config>
+</network-security-config>

@@ -1,0 +1,9 @@
+{
+  "name": "jewelry-agent-mvp",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test smoke.test.mjs",
+    "start": "node server.mjs"
+  }
+}

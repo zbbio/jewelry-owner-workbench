@@ -1,0 +1,46 @@
+{
+  "products": {
+    "DEMO103": {
+      "name": "合成示意商品一",
+      "material": "示意图，无真实材质结论",
+      "suggestedPrice": 240,
+      "source": "合成价格表，第2行"
+    },
+    "DEMO105": {
+      "name": "合成示意商品二",
+      "material": "示意图，无真实材质结论",
+      "suggestedPrice": 260,
+      "source": "合成价格表，第4行"
+    }
+  },
+  "knowledge": {
+    "care": {
+      "source": "公开合成话术示例（非商家承诺）",
+      "excerpt": "可建议温和清洁并避免碰撞；具体方法需看已核材质。"
+    },
+    "surface": {
+      "source": "公开合成话术示例（非商家承诺）",
+      "excerpt": "照片不足以判断裂损，先补充细节并核实。"
+    },
+    "scent": {
+      "source": "公开合成话术示例（非商家承诺）",
+      "excerpt": "不凭气味判断珠宝真假。"
+    },
+    "lightness": {
+      "source": "公开合成话术示例（非商家承诺）",
+      "excerpt": "佩戴重量感应以实际重量和顾客体验为准。"
+    },
+    "missing_certificate": {
+      "source": "公开合成话术示例（非商家承诺）",
+      "excerpt": "先核对订单与出库记录；尚未核实前不承诺补发或赔付。"
+    },
+    "authenticity": {
+      "source": "公开合成话术示例（非商家承诺）",
+      "excerpt": "是否天然、处理情况应以本件鉴定资料为准。"
+    },
+    "certificate": {
+      "source": "公开合成话术示例（非商家承诺）",
+      "excerpt": "未登记证书时先核实。"
+    }
+  }
+}

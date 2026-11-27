@@ -1,5 +1,11 @@
 # 珠宝店主四仓工作台 · Jewelry Owner Workbench
 
+## 当前云端 MVP 与 Android 外壳
+
+- [当前云端 MVP 源码和运行说明](services/mvp-current/README.md)：移动首页、四项能力，以及相册和商品卡迭代。
+- [当前 Android IP 预览外壳源码和构建说明](android/ip-preview/README.md)：Android 网络策略、界面壳、资源及无签名构建。
+- 下方原有的 Windows 独立演示、店铺联动和其他 Android 版本继续保留。
+
 面向店主的相册、商品、销售和内容四项能力，共享资料、按需使用，不要求按固定顺序操作，**不是商城**。这里同时保留旧工作台与新版模型演示入口；仓库不附 APK，也不是已经开通的线上 SaaS。
 
 ## 只想演示四个功能？先看这里

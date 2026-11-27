@@ -1,0 +1,21 @@
+{
+  "taxonomyVersion": "n113-demo-jewelry.v1",
+  "scope": "N113 蜜蜡展示样本：形态类目，不是材质鉴定或正式和田玉枚举",
+  "unknown": {"categoryId": null, "subtypeId": null, "status": "needs_review", "legacyGroup": "待确认"},
+  "categories": [
+    {"id":"bracelet","parentId":null,"label":"手串 / 手链","legacyGroup":"手串-手链","aliases":["手串","手链","手串/手链"]},
+    {"id":"necklace","parentId":null,"label":"项链","legacyGroup":"项链","aliases":[]},
+    {"id":"pendant-charm","parentId":null,"label":"吊坠 / 挂件","legacyGroup":"吊坠-挂件","aliases":["吊坠/挂件"]}
+  ],
+  "subtypes": [
+    {"id":"bracelet.round-bead","parentId":"bracelet","label":"圆珠手串","aliases":["单圈圆珠手串","圆珠单圈手串","单圈圆珠手链","单圈圆珠手链（带雕花配珠）","单圈圆珠手链（带雕件配珠）","单圈圆珠手链（带金属链条/小坠）","单圈圆珠手链（带流苏）","单圈圆珠手链（带双配珠）","单圈圆珠手链（配单颗大珠）","圆珠带坠手串","圆珠手串（带流苏挂饰）","圆珠手串带流苏坠","圆珠手链（白色雕件与蓝绿珠点缀）","圆珠手链（白珠与绿色雕件点缀）","圆珠手链（橙红珠点缀）","圆珠手链（带延长链）","圆珠手链（蓝色珠点缀）","圆珠手链带延长链"]},
+    {"id":"bracelet.braided-cord","parentId":"bracelet","label":"编绳手链","aliases":["编织手链","可调节编织手链","可调节编绳手链"]},
+    {"id":"bracelet.bead-other","parentId":"bracelet","label":"串珠手链","aliases":["串珠手串","扁圆片珠手串","多宝串珠手串","多宝串珠手链","碎石珠可调节手链","碎石珠手链（蓝绿珠点缀）"]},
+    {"id":"necklace.bead","parentId":"necklace","label":"串珠项链","aliases":["串珠项链带吊牌","串珠项链带流苏坠","单圈圆珠项链","多宝串珠项链","多色串珠项链","双色串珠项链","素珠长链","长串圆珠链/念珠式项链","长串珠项链","长款项链/珠链"]},
+    {"id":"necklace.long-pendant","parentId":"necklace","label":"带坠长链","aliases":["长链吊坠项链","长串圆珠吊坠项链","长串圆珠葫芦吊坠项链","长串珠项链带圆形吊坠","长串珠项链配随形吊坠"]},
+    {"id":"necklace.cord","parentId":"necklace","label":"绳式项链","aliases":["编织绳项链","挂绳吊坠项链","红绳圆牌吊坠项链","金色绳心形吊坠项链","细绳单珠项链"]},
+    {"id":"necklace.chain-pendant","parentId":"necklace","label":"链式吊坠项链","aliases":["金属链吊坠项链","细链吊坠项链"]},
+    {"id":"pendant-charm.pendant","parentId":"pendant-charm","label":"吊坠","aliases":["单独吊坠","黑绳吊坠","葫芦形吊坠","水滴形吊坠","随形吊坠配绳","椭圆形吊坠","圆角方形牌吊坠","圆形扁平吊坠配编织绳","圆形扁平吊坠配绳"]},
+    {"id":"pendant-charm.accessory","parentId":"pendant-charm","label":"手机 / 包挂","aliases":["手机链","包挂","手机/包挂","多坠组合挂饰/手机链","流苏挂饰/手机链","绳编挂饰/手机链","双坠挂饰/手机链"]}
+  ]
+}
