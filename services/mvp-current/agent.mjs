@@ -1,12 +1,20 @@
 import { executeTool, executeToolAsync, inferFixtureTool, toolDefinitions } from "./tools.mjs";
 import { salesDefinition, makeSalesDraft, requestedSkus } from "./sales.mjs";
+import { isAlbumIntent,isCatalogIntent } from "./album-intent.mjs";
 
 const endpoint = "https://api.deepseek.com/chat/completions";
 const chooseTool = `客服问价、材质、形态、保养、证书或售后均调 sales_prepare_reply，不选择商品卡写入。买家没收到证书是 missing_certificate；问本件是否附证是 certificate；真假/处理是 authenticity，气味是 scent，轻重是 lightness，纹路或坑洞是 surface；要拍摄佩戴效果或列镜头用 content。用户未明确发出整理或批量建卡指令，禁止选 album 或批量建卡。`;
 const liveTools = toolDefinitions.map(t => t.function.name === "sales_prepare_reply" ? salesDefinition : t);
 const system = "你是珠宝店主助手。根据店主指令选择四个工具之一。销售只生成草稿不发送；内容只列镜头不制作；相册不修改原图；商品卡保存演示草稿。在线运行时，相册整理工具直接扫描图片并用 DeepSeek 视觉分类，只在完整成功时发布新分类，失败保留上一批；不要要求店主选择另一个视觉按钮。工具结果必须原样依据。";
 
-function fixture(text) { const [name, args] = inferFixtureTool(text); return { mode: "fixture", tool: name, receipt: executeTool(name, args), reply: replyFor(name, executeTool(name, args)) }; }
+const albumTool="album_classify_batch";
+const albumClarification=(mode,model)=>({mode,tool:null,receipt:null,reply:"请明确只整理哪批照片。",model,albumJobCode:"needs_clarification"});
+function fixture(text) {
+  const [name,args]=inferFixtureTool(text);
+  if(name===albumTool&&!isAlbumIntent(text)){const {albumJobCode,...out}=albumClarification("fixture");return out;}
+  const receipt=executeTool(name,args);
+  return {mode:"fixture",tool:name,receipt,reply:replyFor(name,receipt)};
+}
 export function replyFor(name, receipt) {
   const r = receipt.result;
   if (name === "album_classify_batch" && r.publishStatus === "not_published") return r.retainedPrevious?"本次相册整理未完成，已保留上一批结果。":"本次相册整理未完成，没有发布新结果。";
@@ -19,26 +27,47 @@ export function replyFor(name, receipt) {
   return `已列出三个镜头：\n1. ${r.shots[0]}\n2. ${r.shots[1]}\n3. ${r.shots[2]}\n本次不制作视频。`;
 }
 
-export async function runAgent(text, { apiKey = process.env.DEEPSEEK_API_KEY, model = process.env.DEEPSEEK_MODEL || "deepseek-chat", fixtureMode = process.env.MVP_FIXTURE === "1" } = {}) {
-  if (fixtureMode || !apiKey) return fixture(text);
+export function createDeepSeekCompletion(apiKey,model){
   const complete = async (messages, extra) => {
     const response = await fetch(endpoint, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` }, body: JSON.stringify({ model, messages, ...extra, temperature: 0 }), signal: AbortSignal.timeout(45_000) });
     if (!response.ok) throw new Error(`DeepSeek HTTP ${response.status}`);
     return response.json();
   };
-  const messages = [{ role: "system", content: system + chooseTool }, { role: "user", content: text }];
-  const data = await complete(messages, { tools: liveTools, tool_choice: "auto" });
+  return complete;
+}
+
+export async function runAgent(text, { apiKey = process.env.DEEPSEEK_API_KEY, model = process.env.DEEPSEEK_MODEL || "deepseek-chat", fixtureMode = process.env.MVP_FIXTURE === "1", albumOnly=false,catalogOnly=false,catalogBatch } = {}) {
+  if(catalogOnly){
+    const name="catalog_create_or_read_card";
+    const recovered=text===undefined&&catalogBatch;
+    if(albumOnly||(!recovered&&!isCatalogIntent(text))||!catalogBatch)
+      return {mode:"catalog_snapshot",tool:null,receipt:null,reply:"请明确同步哪批已完成相册分类。"};
+    const receipt=await executeToolAsync(name,{mode:"vision",expectedAlbum:catalogBatch});
+    return {mode:"catalog_snapshot",tool:name,receipt,reply:replyFor(name,receipt)};
+  }
+  if(albumOnly&&!isAlbumIntent(text))return albumClarification("deepseek",model);
+  if(albumOnly&&(fixtureMode||!apiKey))throw Error("ALBUM_ROUTER_UNAVAILABLE");
+  if (fixtureMode || !apiKey) return fixture(text);
+  const complete = createDeepSeekCompletion(apiKey,model);
+  const messages = [{ role: "system", content: system + (albumOnly?"本请求只允许选择相册整理；若不明确，不调用工具。":"") + chooseTool }, { role: "user", content: text }];
+  const data = await complete(messages, { tools: albumOnly?liveTools.filter(t=>t.function.name===albumTool):liveTools, tool_choice: "auto" });
   const msg = data.choices?.[0]?.message; const call = msg?.tool_calls?.[0];
+  if(albumOnly&&(msg?.refusal||msg?.tool_calls?.length!==1||call?.function?.name!==albumTool))
+    return albumClarification("deepseek",model);
   if (!call) return { mode: "deepseek", reply: msg?.content || "模型没有返回内容。", tool: null, receipt: null };
-  const args = JSON.parse(call.function.arguments || "{}");
+  let args;
+  try{args=JSON.parse(call.function.arguments||"{}");}catch(e){if(!albumOnly)throw e;return albumClarification("deepseek",model);}
+  if(albumOnly&&(!args||typeof args!=="object"||Array.isArray(args)||
+    Object.keys(args).some(k=>k!=="mode")||(args.mode!==undefined&&!["vision","demo"].includes(args.mode))))
+    return albumClarification("deepseek",model);
   const tool = call.function.name;
   if (tool === "album_classify_batch") {
-    if (!/相册整理|整理.{0,16}(相册|照片)|照片.{0,12}(分组|分类)|按实物分组/.test(text)) return { mode:"deepseek", tool:null, receipt:null, reply:"请明确要整理的相册或照片批次。", model };
+    if (!isAlbumIntent(text)) return { mode:"deepseek", tool:null, receipt:null, reply:"请明确要整理的相册或照片批次。", model };
     args.mode = "vision";
   }
   if (tool === "catalog_create_or_read_card") {
-    if (/分类结果|每件|批量|自动构建|JSON|结构化/.test(text) && /商品卡|建卡|建档/.test(text)) args.mode = "vision";
-    else delete args.mode;
+    // Only the owned catalog task can publish classifications. The ordinary response stays synchronous.
+    delete args.mode;
     if (args.mode !== "vision" && requestedSkus(text).length) return { mode:"deepseek", tool:null, receipt:null, reply:"请说明是要查商品资料，还是要起草一条客服回复。", model };
   }
   const receipt = tool === "sales_prepare_reply"

@@ -71,14 +71,141 @@ button:focus-visible,a:focus-visible{outline:2px solid #3b725f;outline-offset:2p
 <nav id="rail" class="rail" aria-label="四项工作能力"></nav>
 <form id="form" class="entry"><textarea id="q" rows="1" aria-label="消息内容" placeholder="说说你想做什么…"></textarea>
 <button id="send" type="submit" class="send" aria-label="发送消息" title="发送"><svg class="ic" aria-hidden="true"><use href="#arr"/></svg></button></form></footer></div>
+<dialog id="anran-sales-dialog" aria-labelledby="anran-sales-title">
+  <header><div><b id="anran-sales-title">示例店铺 · 销售接待</b><div id="anran-watch-state" class="tool" role="status">连接销售接待…</div></div>
+  <form method="dialog"><button autofocus type="submit">关闭</button></form></header>
+  <p id="anran-links" hidden><a id="anran-shop-link" href="/demo/shop" target="_blank" rel="noopener">示例顾客店铺 ↗</a> · <a id="anran-owner-link" href="/demo/owner">店主同步端 ↗</a></p>
+  <div class="anran-views">
+    <section><h2>示例店铺 · 顾客视图</h2><iframe id="anran-shop-frame" hidden title="示例店铺 · 原会话镜像"></iframe></section>
+    <section><h2>店主同步窗口</h2><iframe id="anran-owner-frame" title="店主同步窗口"></iframe></section>
+  </div>
+</dialog>
+<style>
+#anran-sales-dialog{box-sizing:border-box;width:min(1220px,96vw);max-width:none;padding:16px;border:1px solid #b7c8be;border-radius:14px;background:#f6f7f2;color:#17352b}
+#anran-sales-dialog [hidden]{display:none} #anran-sales-dialog a{color:#175641} #anran-sales-dialog::backdrop{background:#15241faa}
+#anran-sales-dialog header{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.anran-views{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.anran-views section{min-width:0}
+.anran-views h2{font-size:15px;margin:12px 0 5px}
+.anran-views iframe{box-sizing:border-box;display:block;width:100%;height:70dvh;min-height:250px;border:1px solid #b7c8be;border-radius:8px;background:white}
+@media(max-width:680px){.anran-views{grid-template-columns:1fr}.anran-views iframe{height:50dvh}}
+</style>
 <script>
 const log=document.querySelector('#log'),q=document.querySelector('#q'),view=document.querySelector('#view');let busy=false;
 function addMessage(kind,label,text,tool){const box=document.createElement('div');box.className='msg msg--'+kind;if(tool){const note=document.createElement('div');note.className='tool';note.textContent=tool;box.append(note);}if(label){const title=document.createElement('b');title.textContent=label+'：';box.append(title);}box.append(document.createTextNode(text));log.append(box);view.scrollTop=view.scrollHeight;return box;}
-async function run(text){if(!text||busy)return;busy=true;document.querySelector('#welcome').hidden=true;document.querySelector('#log').hidden=false;document.querySelectorAll('button').forEach(b=>b.disabled=true);addMessage('owner','店主',text);q.value='';const pending=addMessage('status','','正在处理，请稍候；相册或商品卡批量任务需要几分钟。');pending.setAttribute('role','status');
-try{const res=await fetch('/api/chat',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({text})});const r=await res.json();pending.remove();const failed=Boolean(r.error&&!r.reply);const answer=addMessage(failed?'status':'assistant',failed?'':'助手',(r.reply||r.error||'本次暂未完成').replace(/<a\b[^>]*>[\s\S]*?<\/a>/g,''),failed?null:r.mode+' · '+(r.tool||'未调用工具'));if(failed)answer.setAttribute('role','status');if(r.receipt?.status==='completed'){const target=r.tool==='album_classify_batch'?['/gallery','查看分好的照片 →']:r.tool==='catalog_create_or_read_card'&&r.receipt.result?.classificationMode==='deepseek_vision'?['/catalog','查看商品卡 →']:null;if(target){const a=document.createElement('a');a.className='album-result';a.href=target[0];a.target='_blank';a.rel='noopener';a.textContent=target[1];answer.append(document.createElement('br'),a);}}}
+const jobIntent=import('/album-intent.mjs').then(m=>m,()=>null);
+const jobIdOk=id=>typeof id==='string'&&/^[0-9a-f]{64}$/.test(id);
+function useJobTracker(kind,fromAlbum){
+ const isAlbum=kind==='album', verb=isAlbum?'整理相册':'同步商品卡',taskName=isAlbum?'整理':'商品卡同步';
+ const key='jewelry.'+kind+'-job.v1',statusUrl='/api/'+kind+'-jobs/',idField=kind+'JobId';
+ let record=null,bubble=null,timer=0,polling=false,wait=2200;
+ const running=r=>r&&['submitting','accepted','running'].includes(r.status);
+ try{
+  const r=JSON.parse(localStorage.getItem(key)||'null');
+  if(r&&jobIdOk(r.id)&&typeof r.text==='string'&&Number.isFinite(r.at)&&Date.now()-r.at<86400000)record=r;
+ }catch{}
+ function remember(r){
+  record=r;
+  try{localStorage.setItem(key,JSON.stringify(r));}catch{}
+ }
+ function note(text,link=false){
+  document.querySelector('#welcome').hidden=true;log.hidden=false;
+  if(!bubble?.isConnected){bubble=addMessage('status','',text);bubble.setAttribute('role','status');}
+  else bubble.textContent=text;
+  if(link){
+   const a=document.createElement('a');a.className='album-result';a.href=isAlbum?'/gallery':'/catalog';a.textContent=(isAlbum?'查看分类相册':'查看商品卡')+' →';
+   bubble.append(document.createElement('br'),a);
+  }
+ }
+ function reflect(r){
+  if(r.status==='completed'){
+   const n=Number.isInteger(r.total)?r.total:null;
+   return note(isAlbum?(n===null?'整理完成。':'整理完成，共 '+n+' 张照片。'):(n===null?'商品卡同步完成。':'已为 '+n+' 张商品卡同步分类。'),true);
+  }
+  if(r.status==='failed'){
+   const messages={
+    interrupted:'这次'+taskName+'中断了，没有自动重跑。请先查看现有结果。',
+    needs_clarification:isAlbum?'这次没有开始整理，请说清楚要整理哪批照片。':'这次没有同步，请明确要把哪批相册分类同步到商品卡。',
+    album_busy:'云端有整理或建卡任务正在运行，请稍后再试。',
+    catalog_busy:'云端有批量任务正在运行，请稍后再试。',
+    album_not_ready:'相册的新批次还没准备好，这次没有动商品卡。请等相册整理完成后再试。',
+    expired:'暂时查不到这次任务；请先查看已有结果，再决定是否重试。',
+    request_rejected:'这次'+taskName+'未被受理。请检查连接或登录后再试。'
+   };
+   return note(messages[r.code]||(isAlbum?'本次相册未发布，上一批仍可查看。':'本次没有更新商品卡，原有商品卡仍可查看。'),
+    !['album_busy','catalog_busy','album_not_ready','request_rejected','needs_clarification'].includes(r.code));
+  }
+  note(r.status==='submitting'?'正在提交'+taskName+'任务…':'正在'+verb+'，离开后可回来继续查看。');
+ }
+ function apply(r,j){
+  if(record!==r||!j||j.id!==r.id||!['accepted','running','completed','failed'].includes(j.status))throw Error('invalid job receipt');
+  Object.assign(r,{status:j.status,admitted:true,code:j.code,total:j.total,batchId:j.batchId});
+  remember(r);reflect(r);wait=2200;if(running(r))schedule(wait);
+ }
+ function schedule(ms){clearTimeout(timer);if(running(record))timer=setTimeout(poll,ms);}
+ async function shortFetch(url,init={}){
+  const controller=new AbortController(),d=setTimeout(()=>controller.abort(),8000);
+  try{return await fetch(url,{...init,signal:controller.signal});}finally{clearTimeout(d);}
+ }
+ function rejected(r,code){
+  if(record!==r)return;
+  Object.assign(r,{status:'failed',code});remember(r);reflect(r);
+ }
+ async function post(r){
+  try{
+   const res=await shortFetch('/api/chat',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({text:r.text,[idField]:r.id,...(r.sourceAlbumJobId?{sourceAlbumJobId:r.sourceAlbumJobId}:{})})});
+   if(record!==r)return;
+   if(res.status===202){apply(r,(await res.json()).job);return;}
+   if(res.status>=500)throw Error('status unknown');
+   const data=await res.json().catch(()=>({}));
+   rejected(r,['album_busy','catalog_busy','album_not_ready'].includes(data.code)?data.code:'request_rejected');
+  }catch{if(record===r){note('连接暂时中断，恢复后继续查看同一任务。');schedule(wait);}}
+ }
+ async function poll(){
+  const r=record;
+  if(polling||!running(r))return;
+  polling=true;
+  try{
+   const res=await shortFetch(statusUrl+r.id,{cache:'no-store'});
+   if(record!==r)return;
+   if(res.status===404&&!r.admitted&&(r.replayCount||0)<3&&Date.now()-r.at<120000){
+    r.replayCount=(r.replayCount||0)+1;remember(r);await post(r);return;
+   }
+   if(res.status===404){rejected(r,'expired');return;}
+   if(!res.ok||res.redirected)throw Error('status unknown');
+   apply(r,(await res.json()).job);
+  }catch{
+   if(record===r){note('连接暂时中断，恢复后继续查看同一任务。');wait=Math.min(12000,wait*2);schedule(wait);}
+  }finally{polling=false;}
+ }
+ async function begin(text){
+  if(running(record)){reflect(record);schedule(0);return;}
+  const id=Array.from(crypto.getRandomValues(new Uint8Array(32)),b=>b.toString(16).padStart(2,'0')).join('');
+  const r={id,text,status:'submitting',at:Date.now()};
+  const source=!isAlbum&&/(刚才|这批|本批|本次|这次)/u.test(text)&&!/(最新已完成|上一批已完成)/u.test(text)&&fromAlbum?.();
+  if(jobIdOk(source))r.sourceAlbumJobId=source;
+  document.querySelector('#welcome').hidden=true;log.hidden=false;
+  addMessage('owner','店主',text);q.value='';bubble=null;
+  remember(r);reflect(r);await post(r);
+ }
+ function attach(text,j){
+  const r={id:j.id,text,status:'accepted',at:Date.now()};
+  bubble=null;remember(r);apply(r,j);
+ }
+ if(record){reflect(record);if(running(record))schedule(0);}
+ window.addEventListener('online',()=>schedule(0));
+ document.addEventListener('visibilitychange',()=>{if(!document.hidden)schedule(0);});
+ return {begin,attach,lastId:()=>record?.id};
+}
+const albumTracker=useJobTracker('album');
+const catalogTracker=useJobTracker('catalog',albumTracker.lastId);
+
+
+async function run(text){if(!text||busy)return;busy=true;const intent=await jobIntent;const tracker=intent?.isAlbumIntent?.(text)?albumTracker:intent?.isCatalogIntent?.(text)?catalogTracker:null;if(tracker){try{await tracker.begin(text);}finally{busy=false;}return;}document.querySelector('#welcome').hidden=true;document.querySelector('#log').hidden=false;document.querySelectorAll('button').forEach(b=>b.disabled=true);addMessage('owner','店主',text);q.value='';const pending=addMessage('status','','正在处理，请稍候；相册或商品卡批量任务需要几分钟。');pending.setAttribute('role','status');
+try{const res=await fetch('/api/chat',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({text})});const r=await res.json();pending.remove();if(res.status===202&&jobIdOk(r.job?.id)){(r.job.kind==='catalog'||intent?.isCatalogIntent?.(text)||/分类结果.*商品卡/u.test(text)?catalogTracker:albumTracker).attach(text,r.job);return;}const failed=Boolean(r.error&&!r.reply);const answer=addMessage(failed?'status':'assistant',failed?'':'助手',(r.reply||r.error||'本次暂未完成').replace(/<a\b[^>]*>[\s\S]*?<\/a>/g,''),failed?null:r.mode+' · '+(r.tool||'未调用工具'));if(failed)answer.setAttribute('role','status');if(r.receipt?.status==='completed'){const target=r.tool==='album_classify_batch'?['/gallery','查看分好的照片 →']:r.tool==='catalog_create_or_read_card'&&r.receipt.result?.classificationMode==='deepseek_vision'?['/catalog','查看商品卡 →']:null;if(target){const a=document.createElement('a');a.className='album-result';a.href=target[0];a.target='_blank';a.rel='noopener';a.textContent=target[1];answer.append(document.createElement('br'),a);}}}
 catch{pending.textContent='连接暂时中断，请查看已有分类相册或商品卡，再重试。';}finally{view.scrollTop=view.scrollHeight;busy=false;document.querySelectorAll('button').forEach(b=>b.disabled=false);}}
 
-const picks=[{"key":"album","icon":"pic","question":"帮我整理今天的照片","label":"相册整理","text":"把今天这批珠宝照片按实物分组，先不要建卡"},{"key":"catalog","icon":"bag","question":"帮我准备商品卡草稿","label":"商品档案","text":"根据刚才的分类结果，自动为每件建立一个结构化商品卡 JSON 文件，字段包括颜色、品类、类型、材质、形态，先保存草稿"},{"key":"sales","icon":"chat","question":"帮我回复顾客的商品问题","label":"销售问答","text":"客人问 DEMO105 是什么材质，帮我回一句，先别发"},{"key":"style","icon":"style","question":"帮我准备短视频方案","label":"风格内容","text":"想看戴起来多大，给我列三个镜头，先别做片"}];
+const picks=[{"key":"album","icon":"pic","question":"帮我整理今天的照片","label":"相册整理","text":"把今天这批珠宝照片按实物分组，先不要建卡"},{"key":"catalog","icon":"bag","question":"帮我准备商品卡草稿","label":"商品档案","text":"根据刚才的分类结果，自动为每件建立一个结构化商品卡 JSON 文件，字段包括颜色、品类、类型、材质、形态，先保存草稿"},{"key":"sales","icon":"chat","question":"打开示例店铺销售接待","label":"销售接待"},{"key":"style","icon":"style","question":"帮我准备短视频方案","label":"风格内容","text":"想看戴起来多大，给我列三个镜头，先别做片"}];
 function makeChoice(item,full){
  const icon=document.createElementNS('http://www.w3.org/2000/svg','svg');
  icon.setAttribute('class','ic');icon.setAttribute('aria-hidden','true');
@@ -87,7 +214,7 @@ function makeChoice(item,full){
  if(full){const badge=document.createElement('span');badge.className='badge';badge.append(icon);b.append(badge);}
  else b.append(icon);
  b.append(document.createTextNode(full?item.question:item.label));
- b.addEventListener('click',()=>{q.value=item.text;q.focus({preventScroll:true});});
+ if(item.text)b.addEventListener('click',()=>{q.value=item.text;q.focus({preventScroll:true});});
  return b;
 }
 for(const item of picks){
@@ -95,4 +222,4 @@ for(const item of picks){
  document.querySelector('#rail').append(makeChoice(item,false));
 }
 document.querySelector('#form').onsubmit=e=>{e.preventDefault();run(q.value.trim());};
-</script></body></html>
+</script><script src="/demo/launch.js"></script></body></html>

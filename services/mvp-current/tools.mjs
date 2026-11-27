@@ -74,7 +74,7 @@ export function executeTool(name, args = {}) {
 
 async function executeUnlocked(name, args = {}) {
   if (name === "catalog_create_or_read_card" && args.mode === "vision") {
-    const result=applyPhotoClassifications();
+    const result=applyPhotoClassifications(args.expectedAlbum);
     return receipt(name,result,result.status==="requires_album"?[]:["沿用已核照片的本批分类","原商品资料未修改","没有重新识图"]);
   }
   if (name !== "album_classify_batch" || args.mode !== "vision") return executeTool(name, args);
@@ -89,12 +89,14 @@ async function executeUnlocked(name, args = {}) {
   }
 }
 
-let writeJob=false;
+let writeJob=null;
+export const currentToolWrite=()=>writeJob;
 export async function executeToolAsync(name,args={}){
   const writes=['album_classify_batch','catalog_create_or_read_card'].includes(name) && args.mode==='vision';
   if(!writes)return executeUnlocked(name,args);
   if(writeJob){const error=new Error('已有相册或商品卡任务正在运行，请稍后查看结果。');error.statusCode=409;throw error;}
-  writeJob=true;try{return await executeUnlocked(name,args);}finally{writeJob=false;}
+  writeJob=name==='album_classify_batch'?'album':'catalog';
+  try{return await executeUnlocked(name,args);}finally{writeJob=null;}
 }
 
 export function inferFixtureTool(text) {

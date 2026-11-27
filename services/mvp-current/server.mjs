@@ -1,4 +1,5 @@
 import http from "node:http";
+import os from "node:os";
 import { readFile,realpath } from "node:fs/promises";
 import path from "node:path";
 import { runAgent } from "./agent.mjs";
@@ -6,7 +7,12 @@ import { catalogResponse } from "./catalog-page.mjs";
 import {createHash} from "node:crypto";
 import {buildAlbumFacets} from "./album-facets.mjs";
 import {isAlbumBatch,viewAlbumRow} from "./album-map.mjs";
-import {demoBase,albumV2Base} from "./paths.mjs";
+import {demoBase,albumV2Base,dataRoot} from "./paths.mjs";
+import {openAlbumJobs,albumJobScope} from "./album-jobs.mjs";
+import {isAlbumIntent,isCatalogIntent} from "./album-intent.mjs";
+import {currentCatalogAlbum,readCatalogProjection,albumPublicationLocked} from "./catalog-projection.mjs";
+import {currentToolWrite} from "./tools.mjs";
+import {handleAnran} from "./anran-cloud.mjs";
 import {allowRequest,readBody} from './access.mjs';
 const port = Number(process.env.PORT || 33113); const root = new URL("./", import.meta.url);
 const resultRoot = path.join(albumV2Base, "分类结果");
@@ -63,15 +69,71 @@ async function galleryPage(query) {
   }
   return `<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>我的分类相册</title><style>.filters{display:flex;align-items:end;gap:14px;flex-wrap:wrap;margin:16px 0;padding:14px;background:white;border:1px solid #d5e2da;border-radius:12px}.filters label{font-size:15px;display:grid;gap:4px}.filters select,.filters button{font:inherit;padding:7px 12px}.filters a{font-size:16px;color:#175641}.tile small{display:block;font-size:14px;overflow-wrap:anywhere;margin:4px 0}.facet-note{font-size:16px}*{box-sizing:border-box}body{font:20px/1.5 system-ui;max-width:900px;margin:0 auto;padding:28px 22px;background:#f6f7f2;color:#17352b}h1{font-size:32px;margin:12px 0 4px}p{color:#56695e}.eyebrow{margin-bottom:0;color:#8c6a2e;font-weight:700}.back{display:inline-block;color:#175641;padding:10px 0;min-height:48px}.categories{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin-top:26px}.category-card{display:block;border-radius:18px;overflow:hidden;background:white;text-decoration:none;color:#17352b;border:1px solid #d5e2da}.category-card img,.empty{width:100%;height:220px;object-fit:cover;background:#edf2ec}.empty{display:grid;place-items:center;color:#738076}.category-label{padding:16px}.category-label strong{display:block;font-size:25px}.category-label span{display:block;font-size:18px;color:#4f685a;margin-top:5px}.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.tile{display:block;color:#17352b;text-decoration:none;border:1px solid #d5e2da;border-radius:10px;padding:6px;background:white}.tile img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:7px}.tile span{display:block;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.note{font-size:16px;margin-top:24px}@media(max-width:600px){body{padding:16px}h1{font-size:27px}.categories{gap:12px}.category-card img,.empty{height:155px}.category-label{padding:12px}.category-label strong{font-size:22px}.category-label span{font-size:16px}.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}</style>${content}</html>`;
 }
+const requiresAlbumAuth=process.env.MVP_AUTH_REQUIRED==='1';
+const albumJobs=openAlbumJobs({
+  dir:path.resolve(process.env.ALBUM_JOBS_DB_DIR||path.join(dataRoot||os.homedir(),dataRoot?'album-jobs':'.mvp-album-jobs')),
+  run:text=>runAgent(text,{albumOnly:true}),
+  runCatalog:(catalogBatch,text)=>runAgent(text,{catalogOnly:true,catalogBatch}),
+  catalogPublication:currentCatalogAlbum,catalogProjection:readCatalogProjection,
+  activeWrite:()=>currentToolWrite()||(albumPublicationLocked()?'album':null),
+  publication:async()=>{
+    try{return JSON.parse(await readFile(path.join(albumV2Base,'分类结果.json'),'utf8'));}
+    catch(e){if(e.code==='ENOENT'||e instanceof SyntaxError)return null;throw e;}
+  }
+});
+const jobJSON=(res,status,body)=>{
+  res.writeHead(status,{'content-type':'application/json; charset=utf-8','cache-control':'no-store','referrer-policy':'no-referrer'});
+  return res.end(JSON.stringify(body));
+};
 const server = http.createServer(async (req, res) => {
   try {
-    if(!await allowRequest(req,res))return;
     const url=new URL(req.url,"http://localhost");
+    if(url.pathname.startsWith("/demo/")) return await handleAnran(req,res,url);
+    if(!await allowRequest(req,res))return;
+    if(req.method==='GET'&&url.pathname==='/album-intent.mjs'){
+      const script=await readFile(new URL('./album-intent.mjs',root));
+      res.writeHead(200,{'content-type':'text/javascript; charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff'});
+      return res.end(script);
+    }
+    if(req.method==='GET'&&(url.pathname==='/api/album-jobs'||url.pathname.startsWith('/api/album-jobs/'))){
+      const id=url.pathname.slice('/api/album-jobs/'.length);
+      const job=albumJobs.get(id,albumJobScope(req,requiresAlbumAuth));
+      return job?jobJSON(res,200,{job}):jobJSON(res,404,{error:'未找到相册任务。',code:'album_job_not_found'});
+    }
+    if(req.method==='GET'&&(url.pathname==='/api/catalog-jobs'||url.pathname.startsWith('/api/catalog-jobs/'))){
+      const id=url.pathname.slice('/api/catalog-jobs/'.length);
+      const job=albumJobs.getCatalog(id,albumJobScope(req,requiresAlbumAuth));
+      return job?jobJSON(res,200,{job}):jobJSON(res,404,{error:'未找到商品卡任务。',code:'catalog_job_not_found'});
+    }
     if(req.method==='GET' && ['/catalog','/catalog/image'].includes(url.pathname)){
       const out=await catalogResponse(demoBase,url);
       res.writeHead(out.status,{'content-type':out.type,'cache-control':'no-store'});return res.end(out.body);
     }
-    if (req.method === "POST" && req.url === "/api/chat") { const body=await readBody(req); const { text } = JSON.parse(body); const out = await runAgent(String(text || "")); res.writeHead(200, { "content-type": "application/json; charset=utf-8" }); return res.end(JSON.stringify(out)); }
+    if (req.method === "POST" && req.url === "/api/chat") {
+      const body=await readBody(req); const {text,albumJobId,catalogJobId,sourceAlbumJobId}=JSON.parse(body);
+      if(isCatalogIntent(text)){
+        const scope=albumJobScope(req,requiresAlbumAuth);
+        if(!scope)return jobJSON(res,401,{error:'请先登录演示'});
+        if(albumJobId!==undefined)return jobJSON(res,409,{error:'此任务编号不可用于该请求。',code:'catalog_job_conflict'});
+        const {job,start,httpStatus,...failure}=albumJobs.submitCatalog(catalogJobId,scope,text,sourceAlbumJobId);
+        if(!job)return jobJSON(res,httpStatus??409,failure);
+        try{return jobJSON(res,202,{job});}finally{start?.();}
+      }
+      if(isAlbumIntent(text)){
+        const scope=albumJobScope(req,requiresAlbumAuth);
+        if(!scope)return jobJSON(res,401,{error:'请先登录演示'});
+        if(catalogJobId!==undefined)return jobJSON(res,409,{error:'此任务编号不可用于该请求。',code:'album_job_conflict'});
+        const {job,start,...failure}=albumJobs.submit(albumJobId,scope,text);
+        if(!job)return jobJSON(res,409,failure);
+        try{return jobJSON(res,202,{job});}finally{start?.();}
+      }
+      if(albumJobId&&albumJobs.get(albumJobId,albumJobScope(req,requiresAlbumAuth)))
+        return jobJSON(res,409,{error:'此任务编号不可用于该请求。',code:'album_job_conflict'});
+      if(catalogJobId&&albumJobs.getCatalog(catalogJobId,albumJobScope(req,requiresAlbumAuth)))
+        return jobJSON(res,409,{error:'此任务编号不可用于该请求。',code:'catalog_job_conflict'});
+      const out=await runAgent(String(text||""));
+      res.writeHead(200,{"content-type":"application/json; charset=utf-8"});return res.end(JSON.stringify(out));
+    }
     if (req.method === "GET" && new URL(req.url,"http://localhost").pathname === "/gallery") { const html = await galleryPage(url.searchParams); res.writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control":"no-store" }); return res.end(html); }
     if (req.method === "GET" && url.pathname==="/gallery/image") {
       const query=url.searchParams, group=query.get("group")||"", file=query.get("file")||"";
