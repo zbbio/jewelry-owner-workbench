@@ -24,10 +24,11 @@ export function currentCatalogAlbum(){
 }
 const matches=(album,pin)=>!!album&&!!pin&&album.batchId===pin.batchId&&album.fileCount===pin.total;
 const equal=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
-function snapshot(){
+function snapshot(withFacts=false){
  const manifest=readJSON(manifestPath);
  const bindings=readJSON(bindingPath);
- if(bindings.indexSha256!==sha(readFileSync(indexPath)))throw Error("FACTS_INDEX_PIN_MISMATCH");
+ const indexBytes=readFileSync(indexPath);
+ if(bindings.indexSha256!==sha(indexBytes))throw Error("FACTS_INDEX_PIN_MISMATCH");
  if(!isAlbumBatch(manifest?.batchId)||!Array.isArray(manifest.items)||!Array.isArray(bindings.items)||
     !bindings.items.length||manifest.items.length!==manifest.fileCount||manifest.fileCount!==bindings.items.length)
    throw Error("NO_COMPLETE_LIVE_ALBUM");
@@ -42,7 +43,8 @@ function snapshot(){
   const view=viewAlbumRow(row,manifest);
   rows[pin.cardId]={classification:view.classification,category:view.category,subtype:view.subtype,imageSha256:row.sha256};
  }
- return {batchId:manifest.batchId,taxonomyVersion:manifest.taxonomyVersion,rows};
+ const projection={batchId:manifest.batchId,taxonomyVersion:manifest.taxonomyVersion,rows};
+ return withFacts?{projection,cards:JSON.parse(indexBytes.toString("utf8")).cards}:projection;
 }
 // Read-back verifies the full published rows, not only a copied status or row count.
 export function readCatalogProjection(pin){
@@ -52,6 +54,35 @@ export function readCatalogProjection(pin){
   return expected.batchId===pin.batchId&&Object.keys(expected.rows).length===pin.total&&equal(saved,expected)
     ?{batchId:pin.batchId,total:pin.total}:null;
  }catch{return null;}
+}
+// Only the current, independently re-read publication may produce a scoped job snapshot.
+export function readCatalogConfirmation(pin){
+ if(!matches(currentCatalogAlbum(),pin))return null;
+ const {projection,cards}=snapshot(true), published=readJSON(active);
+ if(projection.batchId!==pin.batchId||Object.keys(projection.rows).length!==pin.total||
+    !equal(projection,published)||!matches(currentCatalogAlbum(),pin))return null;
+ if(!Array.isArray(cards))throw Error("CATALOG_CONFIRMATION_FACTS_MISSING");
+ const itemsBySku=new Map();
+ for(const card of cards){
+  const sku=card?.cardId;
+  if(typeof sku!=="string"||!Object.hasOwn(projection.rows,sku))continue;
+  if(itemsBySku.has(sku))throw Error("CATALOG_CONFIRMATION_AMBIGUOUS_SKU");
+  const items=new Map();
+  const pending=(name,value)=>typeof value==="string"&&new RegExp("^(?:"+name+")?(?:待核实|未核实|待确认)$","u").test(value.trim());
+  const hasPrice=value=>typeof value==="number"?Number.isFinite(value)&&value>=0:
+   typeof value==="string"&&/^(?:[¥￥]\s*)?(?:\d+|\d{1,3}(?:,\d{3})+)(?:\.\d+)?(?:\s*元)?$/u.test(value.trim());
+  if(pending("尺寸",card.size))items.set("size","尺寸待核实");
+  if(pending("证书",card.certificate))items.set("certificate","证书待核实");
+  if(!hasPrice(card.price))items.set("price","价格待核实");
+  const c=projection.rows[sku].classification;
+  // Do not turn legacy model text or a malformed label (no evidence) into a task.
+  if(c?.status==="needs_review"&&c.evidenceRefs?.length)items.set("classification","品类或类型待核实");
+  itemsBySku.set(sku,{sku,name:typeof card.name==="string"&&card.name.trim()?card.name.slice(0,180):sku,
+   items:[...items].map(([field,label])=>({field,label}))});
+ }
+ if(itemsBySku.size!==pin.total)return null;
+ const products=[...itemsBySku.values()].filter(p=>p.items.length);
+ return {productCount:products.length,itemCount:products.reduce((sum,p)=>sum+p.items.length,0),products};
 }
 export function applyPhotoClassifications(expected){
  const unavailable={total:0,status:"requires_album",classificationSource:"none"};

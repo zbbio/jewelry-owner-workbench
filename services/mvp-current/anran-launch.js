@@ -2,12 +2,14 @@
  const $=id=>document.getElementById(id);
  const dialog=$('anran-sales-dialog'),title=$('anran-sales-title'),owner=$('anran-owner-frame'),guest=$('anran-shop-frame');
  const status=$('anran-watch-state'),shopLink=$('anran-shop-link'),ownerLink=$('anran-owner-link');
- let seen=null, launched=false, launching=false;
+ let seen=null, launched=false, launching=false, activeCheck=null;
  document.querySelectorAll('[data-preset="sales"]').forEach(button=>button.onclick=async()=>{
    if(!dialog.open)dialog.showModal();
    if(launched||launching)return;
    launching=true;
+   status.textContent="正在检查已有销售接待…";
    try{
+    if(await probeActive()||!dialog.open)return;
     const r=await fetch('/demo/api/start',{method:'POST'});
     if(!r.ok)throw Error('start failed');
     const {shop,owner:ownerPage}=await r.json();
@@ -26,6 +28,12 @@
    if(!guest.dataset.store){guest.src=shopLink.href;guest.dataset.store='1';}
    guest.hidden=false;
  };
+ ownerLink.onclick=e=>{
+   if(e.button!==0||e.ctrlKey||e.metaKey||e.shiftKey||e.altKey)return;
+   e.preventDefault();
+   owner.scrollIntoView({block:'start',inline:'nearest'});
+   owner.focus({preventScroll:true});
+ };
  window.addEventListener('message',({origin,source,data})=>{
   if(origin!==location.origin||source!==owner.contentWindow||data?.type!=='anran-sales-feed')return;
   const r=data.reply,seq=r?.seq||0;
@@ -42,11 +50,19 @@
   owner.contentWindow.postMessage({type:'anran-sales-focus',threadId:r.threadId,messageId:r.messageId},location.origin);
   if(!dialog.open)dialog.showModal();
  });
- // A reloaded owner page resumes its existing demo watch without re-opening old replies.
- fetch('/demo/api/active',{cache:'no-store'}).then(r=>r.ok?r.json():null).then(v=>{
-  if(!v||launching||launched)return;
-  owner.src='/demo/owner';ownerLink.href='/demo/owner';
-  $('anran-links').hidden=false;shopLink.hidden=true;
-  status.textContent='店主同步已恢复。请使用已打开或保存的顾客店铺入口。';
- }).catch(()=>{});
+ // Share the initial check with the button; only an explicit no-pair response may start a new one.
+ function probeActive(){
+  if(activeCheck)return activeCheck;
+  activeCheck=fetch('/demo/api/active',{cache:'no-store',redirect:'error'}).then(async r=>{
+   if(r.status===403)return false;
+   if(!r.ok||(await r.json())?.active!==true)throw Error('active check failed');
+   owner.src='/demo/owner';
+   $('anran-links').hidden=false;shopLink.hidden=true;
+   status.textContent='店主同步已恢复。请使用已打开的顾客店铺。';
+   launched=true;
+   return true;
+  }).finally(()=>{activeCheck=null;});
+  return activeCheck;
+ }
+ probeActive().catch(()=>{});
 })();

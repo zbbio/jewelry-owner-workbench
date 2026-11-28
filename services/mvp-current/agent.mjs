@@ -1,6 +1,9 @@
 import { executeTool, executeToolAsync, inferFixtureTool, toolDefinitions } from "./tools.mjs";
 import { salesDefinition, makeSalesDraft, requestedSkus } from "./sales.mjs";
 import { isAlbumIntent,isCatalogIntent } from "./album-intent.mjs";
+import { isVideoIntent, runVideoAgent } from "./video-agent.mjs";
+import {runReferenceVideoAgent} from './reference-video-agent.mjs';
+import {isImageBackgroundIntent,runImageBackgroundAgent} from "./image-background-agent.mjs";
 
 const endpoint = "https://api.deepseek.com/chat/completions";
 const chooseTool = `客服问价、材质、形态、保养、证书或售后均调 sales_prepare_reply，不选择商品卡写入。买家没收到证书是 missing_certificate；问本件是否附证是 certificate；真假/处理是 authenticity，气味是 scent，轻重是 lightness，纹路或坑洞是 surface；要拍摄佩戴效果或列镜头用 content。用户未明确发出整理或批量建卡指令，禁止选 album 或批量建卡。`;
@@ -36,7 +39,10 @@ export function createDeepSeekCompletion(apiKey,model){
   return complete;
 }
 
-export async function runAgent(text, { apiKey = process.env.DEEPSEEK_API_KEY, model = process.env.DEEPSEEK_MODEL || "deepseek-chat", fixtureMode = process.env.MVP_FIXTURE === "1", albumOnly=false,catalogOnly=false,catalogBatch } = {}) {
+export async function runAgent(text, { apiKey = process.env.DEEPSEEK_API_KEY, model = process.env.DEEPSEEK_MODEL || "deepseek-chat", fixtureMode = process.env.MVP_FIXTURE === "1", albumOnly=false,catalogOnly=false,catalogBatch, videoService, videoFetch, imageService, imageContext, imageFetch, requestId, referenceVideoContext, referenceVideoWorkflow, referenceVideoFetch } = {}) {
+  if(!albumOnly&&!catalogOnly&&referenceVideoContext&&referenceVideoWorkflow) return runReferenceVideoAgent(referenceVideoContext,{apiKey:fixtureMode?null:apiKey,model,workflow:referenceVideoWorkflow,fetchImpl:referenceVideoFetch});
+  if(!albumOnly&&!catalogOnly&&isImageBackgroundIntent(text)) return runImageBackgroundAgent(text,{apiKey:fixtureMode?null:apiKey,model,imageService,imageContext,imageFetch,requestId});
+  if(videoService&&!albumOnly&&!catalogOnly&&isVideoIntent(text)) return runVideoAgent(text,{apiKey:fixtureMode?null:apiKey,model,videoService,videoFetch,requestId});
   if(catalogOnly){
     const name="catalog_create_or_read_card";
     const recovered=text===undefined&&catalogBatch;

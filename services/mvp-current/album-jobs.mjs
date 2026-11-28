@@ -4,6 +4,7 @@ import path from 'node:path';
 import {DatabaseSync} from 'node:sqlite';
 
 const ttl=24*60*60*1000;
+const confirmationTtl=90*ttl, confirmationMaxIds=32;
 const hash=text=>createHash('sha256').update(text,'utf8').digest('hex');
 const batch=/^[a-f0-9]{32}$/u;
 const tool='album_classify_batch', catalogTool='catalog_create_or_read_card';
@@ -19,7 +20,7 @@ const project=(id,row)=>({id,status:row.status,
   ...(row.code?{code:row.code}:{}),
   ...(row.status==='completed'?{total:row.total,batchId:row.batch_id}:{})});
 
-export function openAlbumJobs({dir,run,publication,runCatalog,catalogPublication,catalogProjection,activeWrite=()=>null,clock=Date.now}){
+export function openAlbumJobs({dir,run,publication,runCatalog,catalogPublication,catalogProjection,catalogConfirmation,activeWrite=()=>null,clock=Date.now}){
   mkdirSync(dir,{mode:0o700,recursive:true});
   // Separate SQLite writer reservation: service overlap must not interrupt a live worker.
   const guard=new DatabaseSync(path.join(dir,'album-jobs.runner.sqlite'));
@@ -71,7 +72,41 @@ export function openAlbumJobs({dir,run,publication,runCatalog,catalogPublication
   const catalogOld=q('DELETE FROM catalog_jobs WHERE finished_at IS NOT NULL AND finished_at<=?');
   const catalogTrim=q(`DELETE FROM catalog_jobs WHERE id_hash IN
     (SELECT id_hash FROM catalog_jobs WHERE finished_at IS NOT NULL ORDER BY finished_at DESC, rowid DESC LIMIT -1 OFFSET 256)`);
-  const prune=()=>{const cutoff=clock()-ttl;old.run(cutoff);trim.run();catalogOld.run(cutoff);catalogTrim.run();};
+  let confirmations;
+  try{
+    db.exec(`CREATE TABLE IF NOT EXISTS catalog_confirmations_v2 (
+      id_hash TEXT PRIMARY KEY, scope TEXT NOT NULL, batch_id TEXT NOT NULL,
+      finished_at INTEGER NOT NULL, payload TEXT, notified INTEGER NOT NULL DEFAULT 0
+    );
+    CREATE INDEX IF NOT EXISTS catalog_confirmations_v2_scope ON catalog_confirmations_v2(scope,finished_at DESC);
+    CREATE INDEX IF NOT EXISTS catalog_confirmations_v2_retention ON catalog_confirmations_v2(finished_at DESC);`);
+    // First-version snapshots can be migrated only while the original completed job still proves their scope.
+    if(q("SELECT 1 FROM sqlite_master WHERE type='table' AND name='catalog_confirmation_snapshots'").get()){
+      q(`INSERT OR IGNORE INTO catalog_confirmations_v2(id_hash,scope,batch_id,finished_at,payload,notified)
+        SELECT j.id_hash,j.scope,j.batch_id,j.finished_at,s.payload,s.notified FROM catalog_jobs j
+        JOIN catalog_confirmation_snapshots s ON j.id_hash=s.id_hash
+        WHERE j.status='completed' AND j.batch_id IS NOT NULL AND j.finished_at>?`).run(clock()-confirmationTtl);
+    }
+    const fields="id_hash,batch_id,finished_at,payload,notified";
+    const selected=Array(confirmationMaxIds).fill('?').join(',');
+    confirmations={
+      save:q(`INSERT OR IGNORE INTO catalog_confirmations_v2(id_hash,scope,batch_id,finished_at,payload)
+        SELECT id_hash,scope,batch_id,finished_at,? FROM catalog_jobs WHERE id_hash=? AND status='completed'`),
+      expire:q("DELETE FROM catalog_confirmations_v2 WHERE finished_at<=?"),
+      trim:q(`DELETE FROM catalog_confirmations_v2 WHERE id_hash IN
+        (SELECT id_hash FROM catalog_confirmations_v2 ORDER BY finished_at DESC,rowid DESC LIMIT -1 OFFSET 4096)`),
+      signed:q(`SELECT ${fields} FROM catalog_confirmations_v2 WHERE scope=? AND finished_at>?
+        ORDER BY finished_at DESC,rowid DESC LIMIT 128`),
+      preview:q(`SELECT ${fields} FROM catalog_confirmations_v2 WHERE scope=? AND finished_at>?
+        AND id_hash IN (${selected}) ORDER BY finished_at DESC,rowid DESC`),
+      seen:q(`UPDATE catalog_confirmations_v2 SET notified=1 WHERE id_hash=? AND scope=? AND finished_at>?`)
+    };
+  }catch{console.error('CATALOG_CONFIRMATIONS_SETUP_FAILED');}
+  const prune=()=>{
+    const now=clock(), cutoff=now-ttl;old.run(cutoff);trim.run();catalogOld.run(cutoff);catalogTrim.run();
+    try{if(confirmations){confirmations.expire.run(now-confirmationTtl);confirmations.trim.run();}}
+    catch{console.error('CATALOG_CONFIRMATIONS_RETENTION_FAILED');}
+  };
   const catalogEnabled=typeof runCatalog==='function'&&typeof catalogPublication==='function'&&typeof catalogProjection==='function';
   const safeCatalogState=()=>{
     try {
@@ -147,13 +182,38 @@ export function openAlbumJobs({dir,run,publication,runCatalog,catalogPublication
         if(v?.status==='requires_album')return finishCatalog(key,'failed','album_not_ready');
         if(out?.tool!==catalogTool||r?.tool!==catalogTool||r?.status!=='completed'||v?.classificationSource!=='album_snapshot'||
            v?.visionCalls!==0||!same(v,pin)||!same(catalogProjection(pin),pin))return finishCatalog(key,'failed','catalog_failed');
-        finishCatalog(key,'completed',null,pin);
+        completeCatalog(key,pin);
       }catch(e){
         if(closed)return;
         try{finishCatalog(key,'failed',e?.code==='album_not_ready'?'album_not_ready':e?.statusCode===409?'catalog_busy':'catalog_failed');}
         catch{console.error('CATALOG_JOB_STATE_WRITE_FAILED');}
       }
     });
+  }
+  function completeCatalog(key,pin){
+    if(!confirmations)return finishCatalog(key,'completed',null,pin);
+    let payload=null;
+    try{
+      const summary=catalogConfirmation?.(pin);
+      if(summary)payload=JSON.stringify(summary);
+    }catch{console.error('CATALOG_CONFIRMATION_SNAPSHOT_FAILED');}
+    // Commit the independent snapshot with the terminal receipt. A snapshot-write failure can
+    // roll back only this attempt; the existing catalogue publication has already succeeded.
+    try{
+      db.exec('SAVEPOINT catalog_confirmation_write');
+      try{
+        if(catalogTerminal.run('completed',clock(),null,pin.total,pin.batchId,key).changes===1)
+          confirmations.save.run(payload,key);
+        db.exec('RELEASE catalog_confirmation_write');
+      }catch(error){
+        db.exec('ROLLBACK TO catalog_confirmation_write; RELEASE catalog_confirmation_write');
+        throw error;
+      }
+    }catch{
+      console.error('CATALOG_CONFIRMATION_STORE_FAILED');
+      return finishCatalog(key,'completed',null,pin);
+    }
+    prune();
   }
   function finishCatalog(key,status,code,pin){
     catalogTerminal.run(status,clock(),code,pin?.total??null,pin?.batchId??null,key);
@@ -212,5 +272,31 @@ export function openAlbumJobs({dir,run,publication,runCatalog,catalogPublication
     try{db.close();}finally{guard.close();}
   }
   process.once('exit',close);
-  return {submit,get,submitCatalog,getCatalog,close};
+  function previewProofs(raw) {
+    if(typeof raw!=='string'||raw.length>confirmationMaxIds*66)return [];
+    const ids=raw.split(',').map(id=>id.trim());
+    if(ids.length>confirmationMaxIds||!ids.every(isAlbumJobId)||new Set(ids).size!==ids.length)return [];
+    return ids.map(hash);
+  }
+  function listCatalogConfirmations(scope,proofHeader) {
+    if(!scope||!confirmations)return [];
+    const cutoff=clock()-confirmationTtl;
+    let rows;
+    if(scope==='preview'){
+      const keys=previewProofs(proofHeader);
+      if(!keys.length)return [];
+      rows=confirmations.preview.all(scope,cutoff,...keys,...Array(confirmationMaxIds-keys.length).fill(''));
+    }else rows=confirmations.signed.all(scope,cutoff);
+    return rows.map(row=>{
+      const entry={key:row.id_hash,batchId:row.batch_id,finishedAt:row.finished_at,notified:row.notified===1};
+      try{if(row.payload)return {...entry,state:'ready',...JSON.parse(row.payload)};}catch{}
+      return {...entry,state:'unavailable'};
+    });
+  }
+  function markCatalogConfirmationSeen(scope,key,proofHeader) {
+    if(!scope||!isAlbumJobId(key)||!confirmations)return false;
+    if(scope==='preview'&&!previewProofs(proofHeader).includes(key))return false;
+    return confirmations.seen.run(key,scope,clock()-confirmationTtl).changes===1;
+  }
+  return {submit,get,submitCatalog,getCatalog,listCatalogConfirmations,markCatalogConfirmationSeen,close};
 }

@@ -2,7 +2,7 @@
 
 ## 当前云端 MVP 与 Android 外壳
 
-- [当前云端 MVP 源码和运行说明](services/mvp-current/README.md)：移动首页、四项能力、相册与商品卡断线续查和店铺客服同步。
+- [当前云端 MVP 源码和运行说明](services/mvp-current/README.md)：移动首页、四项能力、相册与商品卡断线续查、店铺客服同步、对话发图、图片换背景和参考视频流程。
 - [当前 Android IP 预览外壳源码和构建说明](android/ip-preview/README.md)：Android 网络策略、界面壳、资源及无签名构建。
 - 下方原有的 Windows 独立演示、店铺联动和其他 Android 版本继续保留。
 

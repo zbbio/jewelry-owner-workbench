@@ -13,7 +13,6 @@
 .inner{width:min(100%,760px);padding:0 24px;margin:0 auto}
 .welcome{padding:clamp(26px,6vh,68px) 0 19px}
 .dock{width:min(100%,760px);margin:auto;padding:4px 24px max(12px,env(safe-area-inset-bottom));background:var(--paper)}
-.rail-info{font-size:10px;letter-spacing:.09em;color:var(--quiet);display:flex;justify-content:space-between;align-items:center;padding:0 1px}
 .rail{display:flex;overflow-x:auto;overscroll-behavior-x:contain;gap:7px;padding:5px 1px 9px;scrollbar-width:thin;scroll-snap-type:x proximity}
 .pill{border:1px solid var(--line);border-radius:20px;background:var(--card);font-size:12px;gap:6px;white-space:nowrap;padding:7px 11px;scroll-snap-align:start;flex:none}
 .pill .ic{width:15px;height:15px}
@@ -40,7 +39,7 @@ button:focus-visible,a:focus-visible{outline:2px solid #3b725f;outline-offset:2p
 .badge{display:grid;place-items:center;width:29px;height:29px;border-radius:11px;background:#d7f0e7;color:#276149;flex:none}
 .quick .ic{width:15px;height:15px}
 .dock{background:#f8faf6;padding-top:8px}
-.rail{min-width:0;max-width:100%;scrollbar-width:none}.rail::-webkit-scrollbar{display:none}.rail-info{font-size:12px;letter-spacing:0}
+.rail{min-width:0;max-width:100%;scrollbar-width:none}.rail::-webkit-scrollbar{display:none}
 .pill{display:flex;align-items:center;gap:6px;justify-content:center;min-width:101px;min-height:37px;font-size:13px}
 .entry{display:flex;align-items:center;border-radius:26px;padding:6px 8px 6px 14px}
 .entry textarea{min-height:38px;line-height:24px;align-self:center}.entry textarea:focus-visible{outline:none}
@@ -55,46 +54,480 @@ button:focus-visible,a:focus-visible{outline:2px solid #3b725f;outline-offset:2p
 .msg--assistant{background:#fff}
 .msg--status{align-self:center;max-width:100%;padding:4px 8px;color:#465850;text-align:center;font-size:14px}
 .tool{color:#687a72;font-size:13px}
-.album-result{display:inline-block;padding:18px 24px;margin:14px 0;background:#175640;color:white;border-radius:14px;font-size:22px;font-weight:700;text-decoration:none;min-height:58px;max-width:100%;box-sizing:border-box}.album-result:focus{outline:3px solid #ad8b43}</style></head><body>
+.album-result{display:inline-block;padding:18px 24px;margin:14px 0;background:#175640;color:white;border-radius:14px;font-size:22px;font-weight:700;text-decoration:none;min-height:58px;max-width:100%;box-sizing:border-box}.album-result:focus{outline:3px solid #ad8b43}.video-card{width:min(100%,560px);white-space:normal}.video-card strong{font-size:18px}.video-card p{margin:9px 0}.video-source{color:#38624d;font-weight:650}.video-warning{font-size:13px;color:#875915;background:#fff8e8;padding:9px;border-radius:8px}.video-state{font-size:14px;color:#4b6254}.video-card video{display:block;width:100%;max-height:440px;background:#16251e;border-radius:10px}.video-links{display:flex;flex-wrap:wrap;gap:12px;margin-top:12px}.video-links a{color:#175640;min-height:36px;padding:6px 0}</style><style>
+.photo-composer{position:relative;flex:none}
+#message-photo-add{box-sizing:border-box;width:44px;height:44px;padding:0;display:grid;place-items:center;border:1px solid var(--line);border-radius:50%;background:var(--card);color:var(--green)}
+#message-photo-add .ic{width:22px;height:22px}
+#message-photo-choices{position:absolute;bottom:calc(100% + 10px);left:0;z-index:3;width:max-content;max-width:180px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:5px;box-shadow:0 4px 16px #28463228}
+#message-photo-choices button{display:block;width:100%;text-align:left;min-height:44px;border:0;border-radius:8px;padding:8px 12px;background:transparent}
+#message-photo-choices button:hover,#message-photo-choices button:focus-visible{background:var(--pale)}
+#message-photo-draft,.message-photo-links{display:flex;flex-wrap:wrap;gap:8px}
+#message-photo-draft{margin:0 0 6px}
+#message-photo-draft[hidden],#message-photo-choices[hidden],#message-photo-status[hidden]{display:none}
+#message-photo-draft>div{display:flex;align-items:center;gap:2px}
+#message-photo-draft img,.message-photo-links img{display:block;width:58px;height:58px;border-radius:8px;object-fit:contain;background:var(--pale)}
+#message-photo-draft button{min-width:44px;min-height:44px;border:0;border-radius:50%;background:var(--card);font-size:20px}
+#message-photo-status{margin:0 0 5px;font-size:12px;color:var(--dim);line-height:1.4}
+.message-photo-links{margin-top:8px}
+.message-photo-links img{width:72px;height:72px}
+@media(max-width:360px){#message-photo-draft{gap:4px}#message-photo-draft img{width:47px;height:47px}}
+</style></head><body>
 <svg class="symbols" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><defs><symbol id="gem" viewBox="0 0 24 24"><path d="m3 9 4-5h10l4 5-9 12zM3 9h18M7 4l5 17 5-17"/></symbol>
 <symbol id="pic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="9" r="1.6"/><path d="m4 18 5-5 3 3 3-5 5 6"/></symbol>
 <symbol id="bag" viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="15" rx="3"/><path d="M8 7V5a4 4 0 0 1 8 0v2m-8 6h8m-8 4h5"/></symbol>
 <symbol id="chat" viewBox="0 0 24 24"><path d="M20 11.5c0 4-3.4 7.4-8.2 7.4a12 12 0 0 1-3.1-.4l-4.3 1 1.1-3.3A7.2 7.2 0 0 1 3.6 11c0-4 3.7-7.4 8.2-7.4S20 7.3 20 11.5z"/><path d="M8 10h7m-7 3h4"/></symbol>
 <symbol id="style" viewBox="0 0 24 24"><path d="m12 2 2.2 6.2 5.8 2.3-5.8 2.2L12 19l-2.2-6.3L4 10.5l5.8-2.3zM19 16l.9 2.1L22 19l-2.1.9L19 22l-.9-2.1L16 19l2.1-.9z"/></symbol>
+<symbol id="camera-glyph" viewBox="0 0 24 24"><path d="M4 7h3l2-3h6l2 3h3a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2z"/><circle cx="12" cy="13" r="3.5"/></symbol>
 <symbol id="arr" viewBox="0 0 24 24"><path d="m5 13 7-7 7 7m-7-7v14"/></symbol></defs></svg>
-<div class="app"><header class="mast"><div class="identity"><span class="sig"><svg viewBox="0 0 30 30" fill="none" aria-hidden="true"><path d="m15 3 9 10-9 14-9-14zM6 13h18m-14-5 5 19 5-19" stroke="currentColor" stroke-width="1.35"/></svg></span><div><div class="name">珠宝智能体</div><div class="sub">测试店 · 演示资料</div></div></header>
+<div class="app"><header class="mast"><button type="button" id="session-menu" aria-label="会话" aria-controls="session-sidebar" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 8h16M4 16h12"/></svg></button><div class="identity"><span class="sig"><svg viewBox="0 0 30 30" fill="none" aria-hidden="true"><path d="m15 3 9 10-9 14-9-14zM6 13h18m-14-5 5 19 5-19" stroke="currentColor" stroke-width="1.35"/></svg></span><div><div class="name">珠宝智能体</div><div class="sub">测试店 · 演示资料</div></div></header>
+<nav id="session-sidebar" aria-label="会话" hidden><button type="button" id="catalog-confirmation-open">商品卡待确认</button></nav>
 <main id="view" class="view"><div class="inner">
 <section class="welcome" id="welcome"><h1>Hi，店主 👋</h1><p>今天想让珠宝智能体帮你做什么？</p>
 <div id="suggestions" class="suggestions" aria-label="推荐指令"></div></section>
 <section id="log" aria-label="对话消息" hidden></section></div></main>
-<footer class="dock"><div class="rail-info"><span>工作能力</span><span>可横向滑动</span></div>
-<nav id="rail" class="rail" aria-label="四项工作能力"></nav>
-<form id="form" class="entry"><textarea id="q" rows="1" aria-label="消息内容" placeholder="说说你想做什么…"></textarea>
+<footer class="dock">
+<nav id="rail" class="rail" aria-label="常用操作"></nav>
+<div id="message-photo-draft" aria-label="待发送照片" hidden></div>
+<p id="message-photo-status" role="status" hidden></p>
+<form id="form" class="entry">
+<div class="photo-composer">
+<button id="message-photo-add" type="button" aria-label="添加照片" aria-controls="message-photo-choices" aria-expanded="false" disabled><svg class="ic" aria-hidden="true"><use href="#camera-glyph"/></svg></button>
+<div id="message-photo-choices" aria-label="选择照片来源" hidden><button type="button" id="message-photo-take">拍照</button><button type="button" id="message-photo-pick">从相册选择</button></div>
+<input id="message-photo-camera-input" type="file" accept="image/jpeg,image/png,image/webp" capture="environment" hidden>
+<input id="message-photo-album-input" type="file" accept="image/jpeg,image/png,image/webp" multiple hidden>
+</div>
+<textarea id="q" rows="1" aria-label="消息内容" placeholder="说说你想做什么…"></textarea>
 <button id="send" type="submit" class="send" aria-label="发送消息" title="发送"><svg class="ic" aria-hidden="true"><use href="#arr"/></svg></button></form></footer></div>
 <dialog id="anran-sales-dialog" aria-labelledby="anran-sales-title">
   <header><div><b id="anran-sales-title">示例店铺 · 销售接待</b><div id="anran-watch-state" class="tool" role="status">连接销售接待…</div></div>
-  <form method="dialog"><button autofocus type="submit">关闭</button></form></header>
-  <p id="anran-links" hidden><a id="anran-shop-link" href="/demo/shop" target="_blank" rel="noopener">示例顾客店铺 ↗</a> · <a id="anran-owner-link" href="/demo/owner">店主同步端 ↗</a></p>
+  <form method="dialog"><button id="anran-return" autofocus type="submit">返回珠宝助手</button></form></header>
+  <div class="anran-scroll">
+  <p id="anran-links" hidden><a id="anran-shop-link" href="/demo/shop" target="_blank" rel="noopener">示例顾客店铺 ↗</a> · <a id="anran-owner-link" href="/demo/owner">店主同步端</a></p>
   <div class="anran-views">
     <section><h2>示例店铺 · 顾客视图</h2><iframe id="anran-shop-frame" hidden title="示例店铺 · 原会话镜像"></iframe></section>
     <section><h2>店主同步窗口</h2><iframe id="anran-owner-frame" title="店主同步窗口"></iframe></section>
+  </div>
   </div>
 </dialog>
 <style>
 #anran-sales-dialog{box-sizing:border-box;width:min(1220px,96vw);max-width:none;padding:16px;border:1px solid #b7c8be;border-radius:14px;background:#f6f7f2;color:#17352b}
 #anran-sales-dialog [hidden]{display:none} #anran-sales-dialog a{color:#175641} #anran-sales-dialog::backdrop{background:#15241faa}
-#anran-sales-dialog header{display:flex;align-items:center;justify-content:space-between;gap:12px}
+#anran-sales-dialog[open]{display:flex;flex-direction:column;max-height:calc(100dvh - 1rem);overflow:hidden}
+#anran-sales-dialog>header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex:none;margin-bottom:4px}
+#anran-return{min-height:44px;white-space:nowrap}
+.anran-scroll{min-height:0;overflow:auto;overscroll-behavior:contain}
 .anran-views{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .anran-views section{min-width:0}
 .anran-views h2{font-size:15px;margin:12px 0 5px}
 .anran-views iframe{box-sizing:border-box;display:block;width:100%;height:70dvh;min-height:250px;border:1px solid #b7c8be;border-radius:8px;background:white}
 @media(max-width:680px){.anran-views{grid-template-columns:1fr}.anran-views iframe{height:50dvh}}
 </style>
+<style>
+#session-menu{position:relative;z-index:21;display:grid;place-items:center;flex:none;width:44px;height:44px;padding:0;border:1px solid var(--line);border-radius:50%;background:var(--card)}
+#session-menu svg{width:22px;height:22px}
+#session-sidebar{position:fixed;z-index:20;inset:0 auto 0 0;width:min(290px,calc(100% - 56px));padding:76px 14px 16px;overflow:auto;background:var(--paper);border-right:1px solid var(--line);box-shadow:0 0 0 100vmax #15241f40,8px 0 24px #15241f26}
+#catalog-confirmation-open{width:100%;min-height:46px;text-align:left;background:#f6fbf6;border:1px solid #b8caba;border-radius:10px;padding:8px 12px}
+#catalog-confirmation-dialog{box-sizing:border-box;width:min(520px,calc(100vw - 24px));max-width:none;max-height:calc(100vh - 24px);max-height:calc(100dvh - 24px);padding:16px;border:1px solid #b8caba;border-radius:16px;background:#fffefa;color:#17352b}
+#catalog-confirmation-dialog[open]{display:flex;flex-direction:column;overflow:hidden}
+#catalog-confirmation-dialog::backdrop{background:#15241f99}
+#catalog-confirmation-dialog header{display:flex;justify-content:space-between;align-items:center;gap:8px;flex:none}
+#catalog-confirmation-dialog h2{margin:0;font-size:1.25rem}
+#catalog-confirmation-close,#catalog-confirmation-batches{min-height:44px}
+#catalog-confirmation-summary{margin:8px 0 4px}
+#catalog-confirmation-list{overflow:auto;min-height:0;overscroll-behavior:contain}
+#catalog-confirmation-list section{padding:8px 2px;border-top:1px solid #dbe0d6;overflow-wrap:anywhere}
+#catalog-confirmation-list ul{margin:4px 0 0;padding-left:22px}
+#catalog-confirmation-list a{color:#175641}
+</style>
+<dialog id="catalog-confirmation-dialog" aria-labelledby="catalog-confirmation-title">
+ <header><h2 id="catalog-confirmation-title">待我确认</h2><form method="dialog"><button id="catalog-confirmation-close" type="submit" autofocus>关闭</button></form></header>
+ <select id="catalog-confirmation-batches" aria-label="选择已完成批次" hidden></select>
+ <p id="catalog-confirmation-summary" role="status"></p>
+ <div id="catalog-confirmation-list" tabindex="0" aria-label="待确认商品与事项"></div>
+</dialog>
+<style>
+#rail{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}
+#rail .pill{min-width:0;min-height:44px;padding-inline:4px;gap:4px}
+@media(max-width:370px){#rail .pill{flex-direction:column;gap:2px;padding-block:3px}}
+#rail [data-preset="style"][aria-pressed="true"]{background:var(--pale);border-color:var(--green)}
+</style>
 <script>
 const log=document.querySelector('#log'),q=document.querySelector('#q'),view=document.querySelector('#view');let busy=false;
 function addMessage(kind,label,text,tool){const box=document.createElement('div');box.className='msg msg--'+kind;if(tool){const note=document.createElement('div');note.className='tool';note.textContent=tool;box.append(note);}if(label){const title=document.createElement('b');title.textContent=label+'：';box.append(title);}box.append(document.createTextNode(text));log.append(box);view.scrollTop=view.scrollHeight;return box;}
+/* reference-video-ui:start */
+const refTurnPath='/api/message-photos/video-turns', refId=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+const referenceCards=new Map();
+let referenceTimer, referenceReading=false, referenceRefreshQueued=false;
+function queueReferenceScan(ms=0){
+ clearTimeout(referenceTimer);referenceTimer=setTimeout(()=>void scanReferenceTurns(),ms);
+}
+function showReferenceTurn(turn,job=turn?.job){
+ if(!refId.test(turn?.id||''))return;
+ const actual=refId.test(job?.id||'')?job:null;
+ let card=referenceCards.get(turn.id);
+ if(!card?.isConnected){
+   card=addMessage('assistant','','');card.classList?.add('video-card','reference-video-card');
+   card.dataset.referenceTurnId=turn.id;referenceCards.set(turn.id,card);
+ }
+ if(refId.test(turn.messageId||'')){
+   const anchor=document.querySelector('[data-photo-message-id="'+turn.messageId+'"]');
+   if(anchor&&card.previousElementSibling!==anchor)anchor.after(card);
+ }
+ log.hidden=false;
+ const title=document.createElement('strong');title.textContent=actual?.name||'风格内容 · 参考视频';
+ const desc=document.createElement('p');desc.setAttribute('role','status');
+ desc.textContent=actual?.status==='ready'&&actual.mediaUrl==='/style-video/media/'+actual.id?
+   (actual.reused?'复用已有成片，未新生成。':'视频已完成，可打开顾客单片。'):
+   actual?.status==='processing'?'视频任务处理中，尚未完成。':
+   actual?.status==='unknown'?'结果暂不明确，未自动重试。':
+   actual?.status==='failed'?'视频任务未完成，未自动重试。':turn.reply||'等待视频工作流回执。';
+ const rows=[title,desc];
+ if(actual){
+   const caution=document.createElement('p');caution.className='video-warning';
+   caution.textContent=actual.warning||'AI合成，非实拍；商品细节以实物为准。';rows.push(caution);
+ }
+ if(actual?.status==='ready'&&actual.mediaUrl==='/style-video/media/'+actual.id){
+   const link=document.createElement('a');link.className='album-result';link.target='_blank';link.rel='noopener noreferrer';
+   link.href=actual.mediaUrl;link.textContent='打开顾客单片（MP4）';rows.push(link);
+ }
+ card.replaceChildren(...rows);
+}
+async function scanReferenceTurns(){
+ if(referenceReading){referenceRefreshQueued=true;return}
+ referenceReading=true;
+ let again=false;
+ async function get(u){
+   const r=await fetch(u,{method:'GET',cache:'no-store',signal:AbortSignal.timeout(7000)});
+   return r.ok&&!r.redirected?r.json():null;
+ }
+ try{
+   const list=await get(refTurnPath);
+   for(const turn of Array.isArray(list?.turns)?list.turns:[]){
+     let job=turn.job;
+     if(job?.status==='processing'&&refId.test(job.id||'')&&job.statusUrl==='/style-video/status/'+job.id){
+       try{const got=await get(job.statusUrl);if(got?.job?.id===job.id)job=got.job}catch{}
+     }
+     showReferenceTurn(turn,job);
+     if(turn.state==='routing'||job?.status==='processing')again=true;
+   }
+ }catch{}
+ finally{
+   referenceReading=false;
+   if(referenceRefreshQueued){referenceRefreshQueued=false;queueReferenceScan()}
+   else if(again)queueReferenceScan(1800);
+ }
+}
+/* reference-video-ui:end */
+/* uploaded-image-ui:start */
+const imageTurnPath='/api/message-photos/image-turns', uploadedImageCards=new Map();
+let imageTurnTimer,imageTurnReading=false,imageTurnQueued=false;
+function queueImageScan(ms=0){
+ clearTimeout(imageTurnTimer);imageTurnTimer=setTimeout(()=>void scanImageTurns(),ms);
+}
+function showUploadedImageTurn(turn,job=turn?.job,owner=null){
+ if(!refId.test(turn?.id||''))return;
+ if(owner)owner.dataset.imageRequestId=turn.id;
+ let anchor=refId.test(turn.messageId||'')?document.querySelector('[data-photo-message-id="'+turn.messageId+'"]'):
+   document.querySelector('[data-image-request-id="'+turn.id+'"]');
+ if(!anchor&&!turn.messageId&&turn.userText){
+   anchor=addMessage('owner','店主',turn.userText);anchor.dataset.imageRequestId=turn.id;
+ }
+ let card=uploadedImageCards.get(turn.id);
+ if(!card?.isConnected){
+   card=addMessage('assistant','','');card.dataset.imageTurnId=turn.id;uploadedImageCards.set(turn.id,card);
+ }
+ if(anchor&&card.previousElementSibling!==anchor)anchor.after(card);
+ log.hidden=false;
+ const key=JSON.stringify([turn.state,turn.reply,job]);
+ if(card.dataset.resultKey===key)return;
+ card.dataset.resultKey=key;
+ const message=document.createElement('p');message.setAttribute('role','status');
+ message.textContent=turn.reply||'等待图片工作流回执。';card.replaceChildren(message);
+ if(job)showImageJob(job,card,{remember:false,uploaded:true});
+}
+async function scanImageTurns(){
+ if(imageTurnReading){imageTurnQueued=true;return}
+ imageTurnReading=true;let again=false;
+ async function get(u){
+   const r=await fetch(u,{method:'GET',cache:'no-store',signal:AbortSignal.timeout(7000)});
+   return r.ok&&!r.redirected?r.json():null;
+ }
+ try{
+   const list=await get(imageTurnPath);
+   for(const turn of Array.isArray(list?.turns)?list.turns:[]){
+     let job=turn.job;
+     if(job?.status==='intent_recorded'&&imageJobIdOk(job.id)&&job.statusUrl==='/style-image/jobs/'+job.id){
+       try{const got=await get(job.statusUrl);if(got?.job?.id===job.id)job=got.job}catch{}
+     }
+     showUploadedImageTurn(turn,job);
+     if(turn.state==='routing'||job?.status==='intent_recorded')again=true;
+   }
+ }catch{}
+ finally{
+   imageTurnReading=false;
+   if(imageTurnQueued){imageTurnQueued=false;queueImageScan()}
+   else if(again)queueImageScan(1800);
+ }
+}
+/* uploaded-image-ui:end */
+/* video-ui: existing chat shell, local job references only; no provider calls here. */
+const videoJobIdOk=id=>typeof id==='string'&&/^[A-Za-z0-9_-]{1,100}$/.test(id);
+const videoStorageKey='jewelry.video-job.v1';
+let activeVideoId=null,videoEpoch=0,videoTimer=0,videoReads=0;
+const videoCards=new Map();
+function videoRoute(route,id,kind){const params=new URLSearchParams({id});if(kind)params.set('kind',kind);return route+'?'+params;}
+function videoStatus(status){return ({accepted:'pending',submitted:'queued',processing:'running',completed:'ready',succeeded:'ready',error:'failed'})[status]||status;}
+function showVideoCard(job,{remember=true,restoring=false,existing=false}={}){
+ if(!job||!videoJobIdOk(job.id))return false;
+ const status=videoStatus(job.status);
+ if(!['pending','queued','running','ready','failed','planned','awaiting_confirmation'].includes(status))return false;
+ if(activeVideoId!==job.id){activeVideoId=job.id;videoEpoch++;clearTimeout(videoTimer);}
+ const epoch=videoEpoch;
+ if(remember)try{localStorage.setItem(videoStorageKey,JSON.stringify({id:job.id,...(existing?{existing:true}:{})}));}catch{}
+ document.querySelector('#welcome').hidden=true;log.hidden=false;
+ let box=videoCards.get(job.id);
+ if(!box?.isConnected){box=addMessage('assistant','','');box.classList.add('video-card');box.dataset.videoJobId=job.id;videoCards.set(job.id,box);}
+ box.dataset.videoStatus=status;box.replaceChildren();
+ const title=document.createElement('strong');title.textContent=typeof job.title==='string'?job.title.slice(0,100):'珠宝短片作品';box.append(title);
+ const origin=job.origin==='imported'||job.imported===true;
+ const source=document.createElement('p');source.className='video-source';source.textContent=restoring?'正在恢复已有任务':(existing||origin)?'已有短片 · 不重新生成':'本次生成任务';box.append(source);
+ const warning=document.createElement('p');warning.className='video-warning';
+ warning.textContent='AI 合成示意，仅供内部预览，未发布。'+(job.separatorPassed===true?'':job.separatorPassed===false?'隔片检查未通过，请勿当作实物展示。':'隔片检查尚未确认通过，请先核对画面。');
+ if(typeof job.warning==='string')warning.append(document.createTextNode(' '+job.warning.slice(0,300)));
+ box.append(warning);
+ const state=document.createElement('p');state.className='video-state';state.setAttribute('role','status');
+ state.textContent=restoring?'正在查询已有任务，不会重复生成。':status==='ready'?'短片已就绪，可以播放。':status==='failed'?'本次短片任务失败，没有自动重做或再次扣费。':status==='planned'||status==='awaiting_confirmation'?'短片方案已准备；尚未开始生成。':'短片正在处理，刷新后可继续查看，不会自动重做。';
+ if(status==='running'&&Number.isFinite(job.progress))state.append(document.createTextNode(' '+Math.max(0,Math.min(100,Math.round(job.progress)))+'%'));
+ if(status==='failed'&&typeof job.error==='string')state.append(document.createTextNode(' '+job.error.slice(0,300)));
+ box.append(state);
+ if(status==='ready'){
+  const player=document.createElement('video');player.controls=true;player.playsInline=true;player.preload='metadata';player.setAttribute('aria-label','珠宝短片播放');player.src=videoRoute('/video/media',job.id,'generated');
+  player.addEventListener('error',()=>{if(activeVideoId===job.id&&epoch===videoEpoch)state.textContent='短片暂未加载成功。可重新播放，或打开独立作品页；没有重新生成。';});box.append(player);
+ }
+ const links=document.createElement('div');links.className='video-links';
+ for(const [label,url] of [['打开作品页',videoRoute('/video/watch',job.id)],...(status==='ready'?[['查看参考片',videoRoute('/video/media',job.id,'original')],['查看本件图片',videoRoute('/video/media',job.id,'product')]]:[])]){
+  const a=document.createElement('a');a.textContent=label+' ↗';a.href=url;a.target='_blank';a.rel='noopener';links.append(a);
+ }
+ box.append(links);view.scrollTop=view.scrollHeight;
+ clearTimeout(videoTimer);
+ if(['pending','queued','running'].includes(status))videoTimer=setTimeout(()=>pollVideoJob(job.id,epoch,existing),1200);
+ return true;
+}
+async function pollVideoJob(id,epoch=videoEpoch,existing=false){
+ if(id!==activeVideoId||epoch!==videoEpoch)return;
+ const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),8000);
+ try{
+  const res=await fetch(videoRoute('/video/jobs',id),{cache:'no-store',signal:controller.signal});
+  if(id!==activeVideoId||epoch!==videoEpoch)return;
+  if(!res.ok||res.redirected)throw Error('job lookup failed');
+  const payload=await res.json(),job=payload.job||payload;
+  if(id!==activeVideoId||epoch!==videoEpoch)return;
+  if(job.id!==id||!showVideoCard(job,{remember:false,existing}))throw Error('invalid job');
+ }catch{
+  if(id===activeVideoId&&epoch===videoEpoch){const state=videoCards.get(id)?.querySelector('.video-state');if(state)state.textContent='暂时查不到任务状态；只会继续查询，不会重新提交或扣费。';videoTimer=setTimeout(()=>pollVideoJob(id,epoch,existing),4000);}
+ }finally{clearTimeout(timeout);}
+}
+function restoreVideoJob(){
+ try{const saved=JSON.parse(localStorage.getItem(videoStorageKey)||'null');if(videoJobIdOk(saved?.id)){const existing=saved.existing===true;showVideoCard({id:saved.id,status:'pending'},{remember:false,restoring:true,existing});clearTimeout(videoTimer);void pollVideoJob(saved.id,videoEpoch,existing);}}catch{}
+}
+restoreVideoJob();
+/* image-bg-ui: render only the typed result on this message; restoration is GET-only. */
+const imageJobIdOk=id=>typeof id==='string'&&/^img-job-[a-f0-9-]{36}$/.test(id);
+const imageRestoreKey='jewelry.image-background-jobs.v1';
+function imageSavedIds(){
+ try{return (JSON.parse(localStorage.getItem(imageRestoreKey)||'[]')||[]).filter(imageJobIdOk).slice(0,10);}catch{return [];}
+}
+function imageUrlFor(route,id,kind){
+ const qs=new URLSearchParams({id});if(kind){qs.set('kind',kind);qs.set('version','1');}
+ return '/image-background/'+route+'?'+qs;
+}
+function showImageJob(job,answer,{remember=true,uploaded=false}={}){
+ if(!imageJobIdOk(job?.id)||!answer)return;
+ if(remember)try{localStorage.setItem(imageRestoreKey,JSON.stringify([...new Set([job.id,...imageSavedIds()])].slice(0,10)));}catch{}
+ const box=document.createElement('section');box.className='video-card image-bg-card';box.dataset.imageJobId=job.id;
+ const title=document.createElement('p');title.textContent=uploaded?'本次上传图换背景':job.productId||'商品换背景';box.append(title);
+ const state=document.createElement('p');state.setAttribute('role','status');
+ const media='/style-image/media/'+job.id+'/';
+ const watch='/style-image/watch/'+job.id;
+ if(uploaded&&(job.originalUrl!==media+'original'||job.watchUrl!==watch))return;
+ const ready=job.status==='preview_ready'&&job.version===1&&
+   (!uploaded||(job.previewUrl===media+'generated'&&job.thumbnailUrl===media+'thumbnail'));
+ state.textContent=ready?'AI 合成预览，非实拍；珠子和隔片请对照原图核实。':job.providerCode==='ModelNotOpen'?'图片模型未开通，没有新图。':job.status==='failed'?'换背景未完成，没有新图。':'提交结果尚未确认；不会自动重试。';
+ if(ready&&Array.isArray(job.warnings)&&job.warnings.includes('SOURCE_ASPECT_RATIO_CHANGED'))state.textContent+=' 生成图与原图宽高比不同，请复核。';
+ box.append(state);
+ if(ready){
+   const img=document.createElement('img');img.alt='换背景预览';img.loading='lazy';img.style.maxWidth='100%';img.style.maxHeight='280px';
+   img.src=uploaded?job.thumbnailUrl:imageUrlFor('thumbnail',job.id,'generated');box.append(img);
+ }
+ const link=document.createElement('a');link.className='album-result';link.href=uploaded?watch:imageUrlFor('watch',job.id);
+ link.textContent=ready?'查看原图与换背景对照 →':'查看任务与原图 →';box.append(link);
+ if(uploaded){
+   for(const [url,label] of [[job.originalUrl,'打开本次上传原图 →'],...(ready?[[job.previewUrl,'打开效果图 →']]:[])]){
+     const a=document.createElement('a');a.className='album-result';a.href=url;a.textContent=label;box.append(a);
+   }
+ }
+ if(ready&&!uploaded){
+   const all=document.createElement('a');all.className='album-result';all.href='/image-background/collection';
+   all.textContent='查看全部换背景预览 →';box.append(all);
+ }
+ answer.append(box);
+}
+function isExistingVideoReply(r){
+ const receipt=r.receipt,result=receipt?.result,job=r.videoJob;
+ const selected=result?.job||(result?.id?result:result?.jobs?.[0]);
+ return r.tool==='video_find_existing'&&receipt?.tool===r.tool&&receipt.status==='completed'&&
+  videoJobIdOk(job?.id)&&selected?.id===job.id&&typeof selected.productId==='string'&&selected.productId===job.productId;
+}
+function renderContentReply(r,answer){
+ if(r.tool==='image_replace_background'&&r.imageJob){showImageJob(r.imageJob,answer);return;}
+ if(/^video_/.test(r.tool||'')&&videoJobIdOk(r.videoJob?.id)){
+  const existing=isExistingVideoReply(r);
+  if((r.tool==='video_find_existing'||r.receipt?.tool==='video_find_existing')&&!existing)return;
+  showVideoCard(r.videoJob,{existing});
+ }
+}
+async function restoreImageJobs(){
+ for(const id of imageSavedIds().reverse()){
+   try{
+     const response=await fetch(imageUrlFor('jobs',id),{cache:'no-store'});
+     if(!response.ok)continue;
+     const {imageJob}=await response.json();if(imageJob?.id!==id)continue;
+     if(typeof log!=='undefined')log.hidden=false;
+     showImageJob(imageJob,addMessage('assistant','助手','已保留的图片任务'),{remember:false});
+   }catch{}
+ }
+}
+/* /image-bg-ui */
+
+void restoreImageJobs();
+
+
 const jobIntent=import('/album-intent.mjs').then(m=>m,()=>null);
 const jobIdOk=id=>typeof id==='string'&&/^[0-9a-f]{64}$/.test(id);
+const confirmationUI=(()=>{
+ const entry=document.querySelector('#catalog-confirmation-open'),dialog=document.querySelector('#catalog-confirmation-dialog');
+ const menu=document.querySelector('#session-menu'),sidebar=document.querySelector('#session-sidebar');
+ function closeSidebar(){
+  if(sidebar.hidden)return;
+  sidebar.hidden=true;menu.setAttribute('aria-expanded','false');menu.focus({preventScroll:true});
+ }
+ menu.addEventListener('click',()=>{
+  if(!sidebar.hidden){closeSidebar();return;}
+  sidebar.hidden=false;menu.setAttribute('aria-expanded','true');entry.focus({preventScroll:true});
+ });
+ document.addEventListener('click',event=>{
+  if(sidebar.hidden||menu.contains(event.target)||sidebar.contains(event.target))return;
+  event.preventDefault();event.stopPropagation();closeSidebar();
+ },true);
+ document.addEventListener('keydown',event=>{
+  if(!sidebar.hidden&&event.key==='Escape'){event.preventDefault();closeSidebar();}
+ });
+ const picker=document.querySelector('#catalog-confirmation-batches'),summary=document.querySelector('#catalog-confirmation-summary'), list=document.querySelector('#catalog-confirmation-list');
+ const api='/api/catalog-confirmations',seenKey='jewelry.catalog-notified.v1';
+ const keyOk=k=>typeof k==='string'&&/^[0-9a-f]{64}$/u.test(k);
+ const jobsKey='jewelry.catalog-confirmation-jobs.v1',maxJobIds=32;
+ let heldJobs=[];
+ function storedJobs(){
+  try{const ids=JSON.parse(localStorage.getItem(jobsKey)||'[]');return Array.isArray(ids)?ids.filter(keyOk).slice(0,maxJobIds):[];}
+  catch{return [];}
+ }
+ function rememberJob(id){
+  if(!keyOk(id))return;
+  heldJobs=[...new Set([id,...storedJobs(),...heldJobs])].slice(0,maxJobIds);
+  try{localStorage.setItem(jobsKey,JSON.stringify(heldJobs));}catch{}
+ }
+ function jobHeaders(){
+  const ids=[...new Set([...storedJobs(),...heldJobs])].slice(0,maxJobIds);
+  return ids.length?{'X-Catalog-Job-Ids':ids.join(',')}:{};
+ }
+ // Migrate the last known job even when its old receipt is already older than 24 hours.
+ try{const prior=JSON.parse(localStorage.getItem('jewelry.catalog-job.v1')||'null');if(prior?.id)rememberJob(prior.id);}catch{}
+ let batches=[],sequence=0,retry=0;
+ function seen(){
+  try{return Object.fromEntries(Object.entries(JSON.parse(localStorage.getItem(seenKey)||'{}')).filter(([k,t])=>keyOk(k)&&Date.now()-t<86400000));}
+  catch{return {};}
+ }
+ function acknowledge(batch){
+  if(!batch||batch.notified||batch.state!=='ready'||batch.itemCount<1)return;
+  try{localStorage.setItem(seenKey,JSON.stringify({...seen(),[batch.key]:Date.now()}));}catch{}
+  fetch(api+'/'+batch.key+'/seen',{method:'POST',keepalive:true,headers:jobHeaders()}).then(r=>{if(r.status===204)batch.notified=true;}).catch(()=>{});
+ }
+ function paint(batch,message){
+  list.replaceChildren();
+  list.scrollTop=0;
+  if(!batch){summary.textContent=message||'暂无待我确认的商品。';return;}
+  if(batch.state!=='ready'){summary.textContent='本批商品卡已保存，暂未取得待确认清单。';return;}
+  summary.textContent=batch.productCount+' 件 / '+batch.itemCount+' 项'+(batch.itemCount?'':' · 本批无需确认');
+  for(const product of batch.products){
+   const section=document.createElement('section'),link=document.createElement('a'),items=document.createElement('ul');
+   link.href='/catalog?id='+encodeURIComponent(product.sku);
+   link.textContent=product.name+' · '+product.sku;
+   for(const item of product.items){
+    const li=document.createElement('li');li.textContent=item.label;items.append(li);
+   }
+   section.append(link,items);list.append(section);
+  }
+ }
+ function select(batch){
+  picker.replaceChildren();
+  for(const row of batches){
+   const option=document.createElement('option');option.value=row.key;
+   option.textContent=new Date(row.finishedAt).toLocaleString()+' · '+(row.state==='ready'?row.productCount+'件 / '+row.itemCount+'项':'清单暂不可用');
+   picker.append(option);
+  }
+  picker.hidden=batches.length<2;
+  if(batch)picker.value=batch.key;
+  paint(batch);
+ }
+ function autoOpen(latest,version){
+  const run=()=>{
+   if(version!==sequence||document.hidden||document.querySelector('dialog[open]'))return;
+   const already=seen();
+   for(const b of batches)if(already[b.key]&&!b.notified)acknowledge(b);
+   const batch=latest.find(b=>b.state==='ready'&&b.itemCount>0&&!b.notified&&!already[b.key]);
+   if(!batch)return;
+   closeSidebar();
+   select(batch);
+   dialog.showModal();
+   acknowledge(batch); // Notification only; this does not clear any item.
+  };
+  if(navigator.locks?.request)navigator.locks.request('catalog-confirmation-notify',run).catch(()=>{});
+  else run();
+ }
+ async function refresh(manual=false,completedBatch){
+  clearTimeout(retry);
+  const run=++sequence, controller=new AbortController();
+  const timeout=setTimeout(()=>controller.abort(),8000), signal=controller.signal;
+  try{
+   const response=await fetch(api,{cache:'no-store',signal,headers:jobHeaders()});
+   if(!response.ok||response.redirected)throw Error('confirmation list unavailable');
+   const {batches:current}=await response.json();
+   if(!Array.isArray(current))throw Error('invalid confirmation list');
+   if(run!==sequence)return;
+   batches=current.filter(row=>keyOk(row.key));
+if(dialog.open){
+    const active=batches.find(x=>x.key===picker.value)||batches[0];
+    select(active);acknowledge(active);
+   }else if(!manual)autoOpen(completedBatch?batches.filter(b=>b.batchId===completedBatch).slice(0,1):batches,run);
+  }catch{
+   if(run!==sequence)return;
+   if(dialog.open){batches=[];picker.replaceChildren();picker.hidden=true;paint(null,'暂时无法查看清单，请稍后重新打开。');}
+   else if(!document.hidden)retry=setTimeout(()=>void refresh(false,completedBatch),4000);
+  }finally{clearTimeout(timeout);}
+ }
+ entry.addEventListener('click',()=>{
+  closeSidebar();
+  picker.replaceChildren();picker.hidden=true;paint(null,'正在读取待确认清单…');
+  if(!dialog.open)dialog.showModal();
+  void refresh(true);
+ });
+ picker.addEventListener('change',()=>{const batch=batches.find(x=>x.key===picker.value);paint(batch);acknowledge(batch);});
+ window.addEventListener('online',()=>void refresh());
+ document.addEventListener('visibilitychange',()=>{if(!document.hidden)void refresh();});
+ document.addEventListener('close',e=>{if(e.target!==dialog)void refresh();},true);
+ void refresh();
+ return {refresh,rememberJob};
+})();
 function useJobTracker(kind,fromAlbum){
  const isAlbum=kind==='album', verb=isAlbum?'整理相册':'同步商品卡',taskName=isAlbum?'整理':'商品卡同步';
  const key='jewelry.'+kind+'-job.v1',statusUrl='/api/'+kind+'-jobs/',idField=kind+'JobId';
@@ -106,6 +539,7 @@ function useJobTracker(kind,fromAlbum){
  }catch{}
  function remember(r){
   record=r;
+  if(!isAlbum)confirmationUI.rememberJob(r.id);
   try{localStorage.setItem(key,JSON.stringify(r));}catch{}
  }
  function note(text,link=false){
@@ -141,6 +575,7 @@ function useJobTracker(kind,fromAlbum){
   if(record!==r||!j||j.id!==r.id||!['accepted','running','completed','failed'].includes(j.status))throw Error('invalid job receipt');
   Object.assign(r,{status:j.status,admitted:true,code:j.code,total:j.total,batchId:j.batchId});
   remember(r);reflect(r);wait=2200;if(running(r))schedule(wait);
+  if(!isAlbum&&j.status==='completed')void confirmationUI.refresh(false,j.batchId);
  }
  function schedule(ms){clearTimeout(timer);if(running(record))timer=setTimeout(poll,ms);}
  async function shortFetch(url,init={}){
@@ -201,11 +636,49 @@ const albumTracker=useJobTracker('album');
 const catalogTracker=useJobTracker('catalog',albumTracker.lastId);
 
 
-async function run(text){if(!text||busy)return;busy=true;const intent=await jobIntent;const tracker=intent?.isAlbumIntent?.(text)?albumTracker:intent?.isCatalogIntent?.(text)?catalogTracker:null;if(tracker){try{await tracker.begin(text);}finally{busy=false;}return;}document.querySelector('#welcome').hidden=true;document.querySelector('#log').hidden=false;document.querySelectorAll('button').forEach(b=>b.disabled=true);addMessage('owner','店主',text);q.value='';const pending=addMessage('status','','正在处理，请稍候；相册或商品卡批量任务需要几分钟。');pending.setAttribute('role','status');
-try{const res=await fetch('/api/chat',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({text})});const r=await res.json();pending.remove();if(res.status===202&&jobIdOk(r.job?.id)){(r.job.kind==='catalog'||intent?.isCatalogIntent?.(text)||/分类结果.*商品卡/u.test(text)?catalogTracker:albumTracker).attach(text,r.job);return;}const failed=Boolean(r.error&&!r.reply);const answer=addMessage(failed?'status':'assistant',failed?'':'助手',(r.reply||r.error||'本次暂未完成').replace(/<a\b[^>]*>[\s\S]*?<\/a>/g,''),failed?null:r.mode+' · '+(r.tool||'未调用工具'));if(failed)answer.setAttribute('role','status');if(r.receipt?.status==='completed'){const target=r.tool==='album_classify_batch'?['/gallery','查看分好的照片 →']:r.tool==='catalog_create_or_read_card'&&r.receipt.result?.classificationMode==='deepseek_vision'?['/catalog','查看商品卡 →']:null;if(target){const a=document.createElement('a');a.className='album-result';a.href=target[0];a.target='_blank';a.rel='noopener';a.textContent=target[1];answer.append(document.createElement('br'),a);}}}
+// This narrow grammar only admits overlap in the UI. The server/SDK still chooses
+// the tool from the original text; ambiguous or combined commands keep the old lock.
+function oldVideoProduct(text){
+ const match=/^(?:请|帮我|请帮我|给我)?\s*(?:查看|查找|看看|查|看|播放|找)\s*(?:BCMLDIY)?([0-9]{3}[A-Z]?)\s*(?:号)?\s*(?:的)?\s*(?:旧|已有|已保存|(?:之前|以前)(?:做|制作|生成|保存)?的)(?:视频|短片|成片|作品)[。！!]?$/iu.exec(text.trim());
+ return match?'BCMLDIY'+match[1].toUpperCase():null;
+}
+const chatSend=document.querySelector('#send');
+q.addEventListener('input',()=>{if(videoReads)chatSend.disabled=!oldVideoProduct(q.value);});
+const stripReplyLinks=reply=>reply.replace(/<a\b[^>]*>[\s\S]*?<\/a>/g,'');
+const postChat=(text,signal)=>fetch('/api/chat',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({text}),signal});
+async function readOldVideo(text,productId){
+ videoReads++;
+ const epoch=++videoEpoch;
+ activeVideoId=null;clearTimeout(videoTimer);
+ // A new selection must not keep playing or restore a different product if no work is found.
+ // Prior text replies stay next to their own requests.
+ for(const card of videoCards.values()){card.querySelector('video')?.pause();card.remove();}
+ videoCards.clear();
+ try{localStorage.removeItem(videoStorageKey);}catch{}
+ document.querySelector('#welcome').hidden=true;log.hidden=false;
+ document.querySelectorAll('button:not(#anran-return):not(#catalog-confirmation-open):not(#catalog-confirmation-close)').forEach(b=>b.disabled=true);
+ addMessage('owner','店主',text);q.value='';
+ const slot=addMessage('status','','正在查找 '+productId+' 的已有短片…');
+ slot.setAttribute('role','status');
+ const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),90000);
+ try{
+  const res=await postChat(text,controller.signal), r=await res.json();
+  const wrongCard=r.videoJob&&(!isExistingVideoReply(r)||r.videoJob.productId!==productId);
+  const reply=wrongCard?'返回的作品与所查货号不符，未打开作品。':r.reply||r.error||'本次未查到可用的旧片回执。';
+  slot.textContent=productId+' · '+stripReplyLinks(reply);
+  if(res.ok&&!wrongCard&&epoch===videoEpoch&&r.videoJob)renderContentReply(r,slot);
+ }catch{
+  slot.textContent=productId+(controller.signal.aborted?' · 查询等待超时，请重新查找。':' · 查询连接中断，请重新查找。');
+ }finally{
+  clearTimeout(timeout);
+  if(--videoReads===0)document.querySelectorAll('button').forEach(b=>b.disabled=false);
+ }
+}
+async function run(text){if(!text||busy)return;const videoProduct=oldVideoProduct(text);if(videoProduct)return readOldVideo(text,videoProduct);if(videoReads)return;busy=true;const intent=await jobIntent;const tracker=intent?.isAlbumIntent?.(text)?albumTracker:intent?.isCatalogIntent?.(text)?catalogTracker:null;if(tracker){try{await tracker.begin(text);}finally{busy=false;}return;}document.querySelector('#welcome').hidden=true;document.querySelector('#log').hidden=false;document.querySelectorAll('button:not(#anran-return):not(#catalog-confirmation-open):not(#catalog-confirmation-close)').forEach(b=>b.disabled=true);const owner=addMessage('owner','店主',text);q.value='';const pending=addMessage('status','','正在处理，请稍候；相册或商品卡批量任务需要几分钟。');pending.setAttribute('role','status');
+try{const res=await postChat(text);const r=await res.json();if(refId.test(r.styleImageTurn?.id||'')){pending.remove();showUploadedImageTurn(r.styleImageTurn,r.styleImageTurn.job,owner);queueImageScan();return;}if(refId.test(r.styleVideoTurn?.id||'')){pending.remove();showReferenceTurn(r.styleVideoTurn);queueReferenceScan();return;}if(res.status===202&&jobIdOk(r.job?.id)){pending.remove();(r.job.kind==='catalog'||intent?.isCatalogIntent?.(text)||/分类结果.*商品卡/u.test(text)?catalogTracker:albumTracker).attach(text,r.job);return;}const failed=Boolean(r.error&&!r.reply);const answer=addMessage(failed?'status':'assistant',failed?'':'助手',stripReplyLinks(r.reply||r.error||'本次暂未完成'),null);if(failed)answer.setAttribute('role','status');if(r.tool==='image_replace_background'){pending.replaceWith(answer);}else{pending.remove();}renderContentReply(r,answer);if(r.receipt?.status==='completed'){const target=r.tool==='album_classify_batch'?['/gallery','查看分好的照片 →']:r.tool==='catalog_create_or_read_card'&&r.receipt.result?.classificationMode==='deepseek_vision'?['/catalog','查看商品卡 →']:null;if(target){const a=document.createElement('a');a.className='album-result';a.href=target[0];a.target='_blank';a.rel='noopener';a.textContent=target[1];answer.append(document.createElement('br'),a);}}}
 catch{pending.textContent='连接暂时中断，请查看已有分类相册或商品卡，再重试。';}finally{view.scrollTop=view.scrollHeight;busy=false;document.querySelectorAll('button').forEach(b=>b.disabled=false);}}
 
-const picks=[{"key":"album","icon":"pic","question":"帮我整理今天的照片","label":"相册整理","text":"把今天这批珠宝照片按实物分组，先不要建卡"},{"key":"catalog","icon":"bag","question":"帮我准备商品卡草稿","label":"商品档案","text":"根据刚才的分类结果，自动为每件建立一个结构化商品卡 JSON 文件，字段包括颜色、品类、类型、材质、形态，先保存草稿"},{"key":"sales","icon":"chat","question":"打开示例店铺销售接待","label":"销售接待"},{"key":"style","icon":"style","question":"帮我准备短视频方案","label":"风格内容","text":"想看戴起来多大，给我列三个镜头，先别做片"}];
+const picks=[{"key":"album","icon":"pic","question":"帮我整理今天的照片","label":"相册整理","text":"把今天这批珠宝照片按实物分组，先不要建卡"},{"key":"catalog","icon":"bag","question":"帮我准备商品卡草稿","label":"商品档案","text":"根据刚才的分类结果，自动为每件建立一个结构化商品卡 JSON 文件，字段包括颜色、品类、类型、材质、形态，先保存草稿"},{"key":"sales","icon":"chat","question":"打开示例店铺销售接待","label":"销售接待"},{"key":"style","icon":"style","label":"风格内容"}];
 function makeChoice(item,full){
  const icon=document.createElementNS('http://www.w3.org/2000/svg','svg');
  icon.setAttribute('class','ic');icon.setAttribute('aria-hidden','true');
@@ -217,9 +690,31 @@ function makeChoice(item,full){
  if(item.text)b.addEventListener('click',()=>{q.value=item.text;q.focus({preventScroll:true});});
  return b;
 }
-for(const item of picks){
- document.querySelector('#suggestions').append(makeChoice(item,true));
- document.querySelector('#rail').append(makeChoice(item,false));
+for(const item of picks.slice(0,3)) document.querySelector('#suggestions').append(makeChoice(item,true));
+for(const item of picks) document.querySelector('#rail').append(makeChoice(item,false));
+const styleEntry=document.querySelector('#rail [data-preset="style"]');
+styleEntry.setAttribute('aria-pressed','false');
+styleEntry.addEventListener('click',()=>{
+ styleEntry.setAttribute('aria-pressed','true');
+ q.focus({preventScroll:true});
+});
+for(const entry of document.querySelectorAll('#rail [data-preset]:not([data-preset="style"]),#suggestions [data-preset]')){
+ entry.addEventListener('click',()=>styleEntry.setAttribute('aria-pressed','false'));
 }
-document.querySelector('#form').onsubmit=e=>{e.preventDefault();run(q.value.trim());};
+let messagePhotos=null;
+void import('/message-photo-ui.mjs').then(({setupMessagePhotos})=>{
+ messagePhotos=setupMessagePhotos({q,addMessage,reveal:()=>{document.querySelector('#welcome').hidden=true;log.hidden=false}});
+ document.querySelector('#message-photo-add').disabled=false;
+ new MutationObserver(changes=>{
+   if(changes.some(c=>[...c.addedNodes].some(n=>n.dataset?.photoMessageId))){queueReferenceScan();queueImageScan()}
+ }).observe(log,{childList:true});
+ queueReferenceScan(250);queueImageScan(250);
+},()=>{});
+document.querySelector('#form').onsubmit=e=>{
+ e.preventDefault();const text=q.value.trim();
+ if(messagePhotos?.hasDraft()){
+   if(busy||videoReads)return;
+   busy=true;void messagePhotos.send(text).finally(()=>{busy=false});
+ }else run(text);
+};
 </script><script src="/demo/launch.js"></script></body></html>

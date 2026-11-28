@@ -116,7 +116,9 @@ test('store sends two answers to the original session and synchronizes only its 
  const env={...process.env,PORT:'0',MVP_DATA_DIR:tmp,MVP_AUTH_REQUIRED:'0',MVP_FIXTURE:'0',DEEPSEEK_API_KEY:'synthetic-test-key',ANRAN_CLOUD_DB_DIR:path.join(tmp,'reception'),ALBUM_JOBS_DB_DIR:path.join(tmp,'jobs')};
  let child;
  try{
-  const provider="globalThis.fetch = async ()=>Response.json({id:'synthetic-provider',choices:[{message:{tool_calls:[{function:{name:'sales_prepare_reply',arguments:JSON.stringify({topic:'price'})}}]}}]});";
+   const python=process.env.MVP_PYTHON || (process.platform==='win32'?'python':'python3');
+  execFileSync(python,['-X','utf8',path.join(src,'create-demo-data.py')],{env});
+ const provider="globalThis.fetch = async ()=>Response.json({id:'synthetic-provider',choices:[{message:{tool_calls:[{function:{name:'sales_prepare_reply',arguments:JSON.stringify({topic:'price'})}}]}}]});";
   // Refuse all outbound traffic from the fixture server by replacing its only model transport.
   const inject='data:text/javascript,'+encodeURIComponent(provider);
   // Reserve a real port because the production startup log prints the configured value.
